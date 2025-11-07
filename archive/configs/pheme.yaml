@@ -1,0 +1,37 @@
+display_name: "PHEME"
+paper: https://arxiv.org/abs/2401.02839
+url: https://github.com/PolyAI-LDN/pheme
+license: https://github.com/PolyAI-LDN/pheme/blob/main/LICENSE
+release_date: 2024-01-01
+languages:
+  - en
+training_data:
+  - GigaSpeech
+  - MLS
+  - LibriTTS
+training_hours: 11000
+num_parameters: 300M
+representations:
+  - audio codec
+features:
+  - autoregressive
+  - language modeling
+  - grapheme-to-phoneme
+  - non-autoregressive
+citations: >
+  @misc{budzianowski2024pheme,
+    title={Pheme: Efficient and Conversational Speech Generation}, 
+    author={Paweł Budzianowski and Taras Sereda and Tomasz Cichy and Ivan Vulić},
+    year={2024},
+    eprint={2401.02839},
+    archivePrefix={arXiv},
+    primaryClass={eess.AS}
+  }
+api:
+  identifier: ttsds/pheme
+  version: ac588d7706cfec515200dc4aefde4e1bc3a73c2667d6200c48304d78b0f4567c
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference
+    language: null

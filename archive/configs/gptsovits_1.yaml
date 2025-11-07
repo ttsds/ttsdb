@@ -1,0 +1,36 @@
+display_name: "GPT-SoVITS v1"
+paper: null
+url: https://github.com/RVC-Boss/GPT-SoVITS
+license: https://github.com/RVC-Boss/GPT-SoVITS/blob/main/LICENSE
+release_date: 2024-01-16
+languages:
+  - en
+  - zh
+  - ja
+training_data: null
+training_hours: 2000
+num_parameters: 200M
+representations:
+  - audio codec
+features:
+  - non-autoregressive
+  - autoregressive
+  - grapheme-to-phoneme
+  - language modeling
+citations: >
+  @misc{RVCBoss2024,
+    author = {RVC-Boss},
+    title = {GPT-SoVITS},
+    year = {2024},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/RVC-Boss/GPT-SoVITS}},
+  }
+api:
+  identifier: ttsds/gptsovits_1
+  version: 33e629c53dd218f539d7014e87feb1b1186e3384e0581eefd4b42e341276b225
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language
+    text_reference: text_reference

@@ -1,0 +1,48 @@
+display_name: "Vevo"
+paper: https://openreview.net/pdf?id=anQDiQZhDP
+url: https://github.com/open-mmlab/Amphion
+license: https://github.com/open-mmlab/Amphion/blob/main/LICENSE
+release_date: 2024-12-21
+languages:
+  - en
+  - zh
+  - de
+  - fr
+  - ja
+  - ko
+training_data: Emilia
+training_hours: 101000
+num_parameters: 900M
+representations:
+  - audio codec
+  - repcodec
+features:
+  - non-autoregressive
+  - autoregressive
+  - grapheme-to-phoneme
+  - language modeling
+  - masked training
+  - flow matching
+  - style transfer
+citations: >
+  @inproceedings{zhang2024amphion,
+      author={Zhang, Xueyao and Xue, Liumeng and Gu, Yicheng and Wang, Yuancheng and Li, Jiaqi and He, Haorui and Wang, Chaoren and Song, Ting and Chen, Xi and Fang, Zihao and Chen, Haopeng and Zhang, Junan and Tang, Tze Ying and Zou, Lexiao and Wang, Mingxuan and Han, Jun and Chen, Kai and Li, Haizhou and Wu, Zhizheng},
+      title={Amphion: An Open-Source Audio, Music and Speech Generation Toolkit},
+      booktitle={SLT},
+      year={2024}
+  }
+  @inproceedings{vevo,
+    author       = {Xueyao Zhang and Xiaohui Zhang and Kainan Peng and Zhenyu Tang and Vimal Manohar and Yingru Liu and Jeff Hwang and Dangna Li and Yuhao Wang and Julian Chan and Yuan Huang and Zhizheng Wu and Mingbo Ma},
+    title        = {Vevo: Controllable Zero-Shot Voice Imitation with Self-Supervised Disentanglement},
+    booktitle    = {{ICLR}},
+    publisher    = {OpenReview.net},
+    year         = {2025}
+  }
+api:
+  identifier: ttsds/amphion_vevo
+  version: 3c574aaeaab59a08d582ca9008b98a44055b021d985a79aa1bbad1135943f06a
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language
+    text_reference: text_reference

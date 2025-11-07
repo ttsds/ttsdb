@@ -1,0 +1,42 @@
+display_name: "Fish Speech 1.4"
+paper: https://arxiv.org/abs/2411.01156
+url: https://github.com/fishaudio/fish-speech
+license: https://github.com/fishaudio/fish-speech/blob/main/LICENSE
+release_date: 2024-09-24
+languages:
+  - en
+  - zh
+  - de
+  - ja
+  - fr
+  - es
+  - ko
+  - ar
+training_data: null
+training_hours: 700000
+num_parameters: 400M
+representations:
+  - quantized mel tokens
+  - audio codec
+features:
+  - autoregressive
+  - dual autoregressive
+  - language modeling
+citations: >
+  @misc{fish-speech,
+      title={Fish-Speech: Leveraging Large Language Models for Advanced Multilingual Text-to-Speech Synthesis},
+      author={Shijia Liao and Yuxuan Wang and Tianyu Li and Yifan Cheng and Ruoyi Zhang and Rongzhi Zhou and Yijin Xing},
+      year={2024},
+      eprint={2411.01156},
+      archivePrefix={arXiv},
+      primaryClass={cs.SD},
+      url={https://arxiv.org/abs/2411.01156},
+  }
+api:
+  identifier: ttsds/fishspeech_1_4
+  version: 7d55af8314c9ec4206d76c1e958cd8807c9c1bd59bffcfec363aea89e7179dd8
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference
+    language: null
