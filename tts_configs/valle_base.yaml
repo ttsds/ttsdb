@@ -1,0 +1,41 @@
+display_name: "VALL-E Base (Amphion)"
+paper: https://arxiv.org/abs/2301.02111
+url: https://github.com/open-mmlab/Amphion
+license: https://github.com/open-mmlab/Amphion/blob/main/LICENSE
+release_date: 2024-01-11
+languages:
+  - en
+training_data: LibriLight
+training_hours: 6000
+num_parameters: 370M
+representations:
+  - audio codec
+  - encodec
+features:
+  - non-autoregressive
+  - autoregressive
+  - grapheme-to-phoneme
+  - language modeling
+citations: >
+  @inproceedings{zhang2024amphion,
+      author={Zhang, Xueyao and Xue, Liumeng and Gu, Yicheng and Wang, Yuancheng and Li, Jiaqi and He, Haorui and Wang, Chaoren and Song, Ting and Chen, Xi and Fang, Zihao and Chen, Haopeng and Zhang, Junan and Tang, Tze Ying and Zou, Lexiao and Wang, Mingxuan and Han, Jun and Chen, Kai and Li, Haizhou and Wu, Zhizheng},
+      title={Amphion: An Open-Source Audio, Music and Speech Generation Toolkit},
+      booktitle={SLT},
+      year={2024}
+  }
+  @article{wang2023neural,
+    title={Neural codec language models are zero-shot text to speech synthesizers},
+    author={Wang, Chengyi and Chen, Sanyuan and Wu, Yu and Zhang, Ziqiang and Zhou, Long and Liu, Shujie and Chen, Zhuo and Liu, Yanqing and Wang, Huaming and Li, Jinyu and others},
+    journal={arXiv preprint arXiv:2301.02111},
+    year={2023}
+  }
+api:
+  identifier: ttsds/amphion_valle
+  version: 1b5d91bd5ed16f89c61994f95e70ad58df87fae71b4dc6cf93493b62a2625226
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: null
+    text_reference: text_reference
+    args:
+      model: valle_v1_medium

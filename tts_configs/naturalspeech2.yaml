@@ -1,0 +1,38 @@
+display_name: "NaturalSpeech 2"
+paper: https://arxiv.org/abs/2304.09116
+url: https://github.com/open-mmlab/Amphion
+license: https://github.com/open-mmlab/Amphion/blob/main/LICENSE
+release_date: 2023-12-19
+languages:
+  - en
+training_hours: 585
+training_data: LibriTTS
+num_parameters: 380M
+representations:
+  - waveform
+features:
+  - non-autoregressive
+  - grapheme-to-phoneme
+  - prosody prediction
+  - diffusion
+citations: >
+  @inproceedings{zhang2024amphion,
+      author={Zhang, Xueyao and Xue, Liumeng and Gu, Yicheng and Wang, Yuancheng and Li, Jiaqi and He, Haorui and Wang, Chaoren and Song, Ting and Chen, Xi and Fang, Zihao and Chen, Haopeng and Zhang, Junan and Tang, Tze Ying and Zou, Lexiao and Wang, Mingxuan and Han, Jun and Chen, Kai and Li, Haizhou and Wu, Zhizheng},
+      title={Amphion: An Open-Source Audio, Music and Speech Generation Toolkit},
+      booktitle={SLT},
+      year={2024}
+  }
+  @article{shen2023naturalspeech,
+    title={Naturalspeech 2: Latent diffusion models are natural and zero-shot speech and singing synthesizers},
+    author={Shen, Kai and Ju, Zeqian and Tan, Xu and Liu, Yanqing and Leng, Yichong and He, Lei and Qin, Tao and Zhao, Sheng and Bian, Jiang},
+    journal={arXiv preprint arXiv:2304.09116},
+    year={2023}
+  }
+api:
+  identifier: ttsds/amphion_naturalspeech2
+  version: ef5a325879add6bf5f161568d9ebad53824fa3b6b7f0eacb7f300e8720e861f7
+  parameters:
+    text: text
+    language: null
+    speaker_reference: speaker_reference
+    text_reference: null

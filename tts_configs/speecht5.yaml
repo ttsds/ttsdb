@@ -1,0 +1,34 @@
+display_name: "SpeechT5"
+paper: https://arxiv.org/abs/2110.07205
+url: https://github.com/microsoft/SpeechT5
+license: https://github.com/microsoft/SpeechT5/blob/main/LICENSE
+release_date: 2022-04-12
+languages:
+  - en
+training_data:
+  - LibriTTS
+  - LibriSpeech
+training_hours: 1400
+num_parameters: 144M
+representations:
+  - mel spectrogram
+features:
+  - autoregressive
+citations: >
+  @misc{ao2022speecht5unifiedmodalencoderdecoderpretraining,
+      title={SpeechT5: Unified-Modal Encoder-Decoder Pre-Training for Spoken Language Processing}, 
+      author={Junyi Ao and Rui Wang and Long Zhou and Chengyi Wang and Shuo Ren and Yu Wu and Shujie Liu and Tom Ko and Qing Li and Yu Zhang and Zhihua Wei and Yao Qian and Jinyu Li and Furu Wei},
+      year={2022},
+      eprint={2110.07205},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS},
+      url={https://arxiv.org/abs/2110.07205}, 
+  }
+api:
+  identifier: ttsds/speecht5
+  version: 2d0cffed668383b13a71c06066a9ae480b795b137d17043644797b52c92c88f4
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: null
+    language: null

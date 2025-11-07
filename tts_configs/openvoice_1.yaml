@@ -1,0 +1,33 @@
+display_name: "OpenVoice v1"
+paper: https://arxiv.org/abs/2312.01479
+url: https://github.com/myshell-ai/OpenVoice
+license: https://github.com/myshell-ai/OpenVoice/blob/main/LICENSE
+release_date: 2024-02-06
+languages:
+  - en
+  - zh
+training_data: null
+training_hours: null
+num_parameters: null
+representations:
+  - mel spectrogram
+features:
+  - non-autoregressive
+  - grapheme-to-phoneme
+  - prosody prediction
+  - diffusion
+citations: >
+  @article{qin2023openvoice,
+    title={Openvoice: Versatile instant voice cloning},
+    author={Qin, Zengyi and Zhao, Wenliang and Yu, Xumin and Sun, Xin},
+    journal={arXiv preprint arXiv:2312.01479},
+    year={2023}
+  }
+api:
+  identifier: ttsds/openvoice_1
+  version: 95ec1ff9f006dcc6544ff8dd7922d64ae1e71d45d7c003ed86a25dfa08550276
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language
+    text_reference: null

@@ -1,0 +1,32 @@
+display_name: "HierSpeech++ (LibriTTS-460)"
+paper: https://arxiv.org/abs/2311.12454
+url: https://github.com/sh-lee-prml/HierSpeechpp
+license: https://github.com/sh-lee-prml/HierSpeechpp/blob/main/LICENSE
+release_date: 2023-11-08
+languages:
+  - en
+training_data: 
+  - LibriTTS
+training_hours: 245
+num_parameters: 204M
+representations:
+  - waveform
+features:
+  - non-autoregressive
+  - grapheme-to-phoneme
+  - prosody prediction
+citations: >
+  @article{lee2023hierspeech++,
+    title={Hierspeech++: Bridging the gap between semantic and acoustic representation of speech by hierarchical variational inference for zero-shot speech synthesis},
+    author={Lee, Sang-Hoon and Choi, Ha-Yeong and Kim, Seung-Bin and Lee, Seong-Whan},
+    journal={arXiv preprint arXiv:2311.12454},
+    year={2023}
+  }
+api:
+  identifier: ttsds/hierspeechpp_lt460
+  version: 24361ea827a6309434d1aa717d2ab11682d77dd094dea497cea46e053143ddb1
+  parameters:
+    text: text
+    language: null
+    speaker_reference: speaker_reference
+    text_reference: null

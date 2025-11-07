@@ -1,0 +1,32 @@
+display_name: "F5-TTS"
+paper: https://arxiv.org/abs/2410.06885
+url: https://github.com/SWivid/F5-TTS
+license: https://github.com/SWivid/F5-TTS/blob/main/LICENSE
+release_date: 2024-10-13
+languages:
+  - en
+  - zh
+training_data: Emilia
+training_hours: 95000
+num_parameters: 335M
+representations:
+  - mel spectrogram
+features:
+  - non-autoregressive
+  - masked training
+  - flow matching
+citations: >
+  @article{chen-etal-2024-f5tts,
+      title={F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching}, 
+      author={Yushen Chen and Zhikang Niu and Ziyang Ma and Keqi Deng and Chunhui Wang and Jian Zhao and Kai Yu and Xie Chen},
+      journal={arXiv preprint arXiv:2410.06885},
+      year={2024},
+  }
+api:
+  identifier: ttsds/f5
+  version: 8ed3cd9ee4f9a15bb24ce3752d9df17746ae0a62f105fae42603f102bd9af1d4
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference
+    language: null
