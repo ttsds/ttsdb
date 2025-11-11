@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: ttsdb
+Version: 0.1.0
+Summary: A unified API for TTS inference.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: gradio>=5.49.1
+Requires-Dist: gradio-client>=1.13.3
+Requires-Dist: librosa>=0.11.0
+Requires-Dist: python-dotenv>=1.2.1
+Requires-Dist: requests>=2.32.5
