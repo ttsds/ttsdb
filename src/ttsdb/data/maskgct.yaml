@@ -1,0 +1,16 @@
+providers:
+  hf_space:
+    id: amphion/MaskGCT
+    parameters:
+      text: target_text
+      speaker_reference: prompt_wav
+      text_reference: null
+      language: null
+    default_parameters:
+      target_len: -1
+      n_timesteps: 25
+  docker:
+    
+supported_languages:
+  - en
+  - zh
