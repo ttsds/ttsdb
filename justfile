@@ -48,14 +48,14 @@ setup model device="cpu" torch_version="":
     # Set PyTorch index URL based on device
     if [ "{{device}}" = "cpu" ]; then
         TORCH_INDEX="https://download.pytorch.org/whl/cpu"
-        echo "Installing PyTorch${TORCH_VERSION} (CPU-only)..."
+        echo "Installing PyTorch${TORCH_VERSION} + torchaudio (CPU-only)..."
     else
         TORCH_INDEX="https://download.pytorch.org/whl/cu121"
-        echo "Installing PyTorch${TORCH_VERSION} (CUDA 12.1)..."
+        echo "Installing PyTorch${TORCH_VERSION} + torchaudio (CUDA 12.1)..."
     fi
     
-    # Install PyTorch first from the appropriate index
-    uv pip install "torch${TORCH_VERSION}" --index-url ${TORCH_INDEX}
+    # Install PyTorch and torchaudio first from the appropriate index
+    uv pip install "torch${TORCH_VERSION}" "torchaudio" --index-url ${TORCH_INDEX}
     
     # Install ttsdb-core and model dependencies
     echo "Installing dependencies..."
@@ -64,9 +64,13 @@ setup model device="cpu" torch_version="":
     
     echo "✓ Setup complete! Activate with: source models/{{model}}/.venv/bin/activate"
 
-# Run tests for a model
+# Run unit tests for a model
 test model:
     cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v
+
+# Run integration tests for a model (requires weights: just hf prepare <model>)
+test-integration model:
+    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -m integration
 
 # Build a specific model
 build model:
@@ -81,26 +85,17 @@ build-all:
         just build $m; \
     done
 
-# Generate HuggingFace README for a model
-hf-readme model:
-    python builder/huggingface.py readme "models/{{model}}"
+# HuggingFace operations: prepare, readme, upload, publish
+# Usage: just hf <action> <model> [options]
+#   just hf prepare maskgct [--force]  - Download/prepare weights locally
+#   just hf readme maskgct             - Generate README
+#   just hf upload maskgct             - Upload to ttsds/<model_id>
+#   just hf publish maskgct            - Do all: prepare + readme + upload
+hf action model *args:
+    python builder/huggingface.py {{action}} "models/{{model}}" {{args}}
 
-# Upload weights to HuggingFace (ttsds/models by default)
-hf-upload model repo="ttsds/models":
-    python builder/huggingface.py upload "models/{{model}}" --repo "{{repo}}"
-
-# Preview HuggingFace upload (dry run)
-hf-upload-dry model repo="ttsds/models":
-    python builder/huggingface.py upload "models/{{model}}" --repo "{{repo}}" --dry-run
-
-# Generate HuggingFace README for all models
-hf-readme-all:
+# Publish all models to HuggingFace (prepare + readme + upload)
+hf-all repo="ttsds/models":
     for m in {{models}}; do \
-        just hf-readme $m; \
-    done
-
-# Upload all models to HuggingFace
-hf-upload-all repo="ttsds/models":
-    for m in {{models}}; do \
-        just hf-upload $m {{repo}}; \
+        just hf publish $m --repo {{repo}}; \
     done

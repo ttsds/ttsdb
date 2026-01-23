@@ -1,0 +1,13 @@
+# Test data for MaskGCT
+# Used for integration tests and generating audio examples
+
+test_sentences:
+  en:
+    - text: "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good."
+      description: "Harvard sentences - phonetically balanced"
+
+# Reference audio for voice cloning tests
+reference_audio:
+  url: "https://speechresearch.github.io/audio/fastspeech2/audio/gt_recording_2/0000000004.mp3"
+  text: "Were the leaders in this luckless change, though our own Baskerville, who was at work some years before them, went much on the same lines."
+  language: "en"

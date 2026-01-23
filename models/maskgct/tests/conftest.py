@@ -1,6 +1,11 @@
 """Pytest configuration for MaskGCT tests."""
 
+import os
+import urllib.request
+from pathlib import Path
+
 import pytest
+import yaml
 
 
 def pytest_configure(config):
@@ -18,3 +23,54 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "integration" in item.keywords:
                 item.add_marker(skip_integration)
+
+
+@pytest.fixture
+def weights_path():
+    """Get the path to the local weights directory.
+    
+    Uses TTSDB_WEIGHTS_PATH env var if set, otherwise defaults to huggingface/.
+    """
+    path = os.environ.get("TTSDB_WEIGHTS_PATH")
+    if path is None:
+        path = Path(__file__).parent.parent / "huggingface"
+    return Path(path)
+
+
+@pytest.fixture
+def test_data():
+    """Load test data from test_data.yaml."""
+    test_data_path = Path(__file__).parent.parent / "test_data.yaml"
+    if not test_data_path.exists():
+        pytest.skip(f"Test data not found at {test_data_path}")
+    
+    with open(test_data_path) as f:
+        return yaml.safe_load(f)
+
+
+@pytest.fixture
+def reference_audio(test_data, tmp_path):
+    """Download and provide reference audio for testing."""
+    ref_info = test_data.get("reference_audio", {})
+    url = ref_info.get("url")
+    
+    if not url:
+        pytest.skip("No reference audio URL in test_data.yaml")
+    
+    # Download to temp file
+    audio_path = tmp_path / "reference.mp3"
+    urllib.request.urlretrieve(url, audio_path)
+    
+    return {
+        "path": str(audio_path),
+        "text": ref_info.get("text", ""),
+        "language": ref_info.get("language", "en"),
+    }
+
+
+@pytest.fixture
+def audio_examples_dir():
+    """Get the audio examples directory, creating it if needed."""
+    examples_dir = Path(__file__).parent.parent / "audio_examples"
+    examples_dir.mkdir(exist_ok=True)
+    return examples_dir

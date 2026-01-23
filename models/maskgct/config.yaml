@@ -1,5 +1,6 @@
 metadata:
   name: "MaskGCT"
+  id: "maskgct"
   training_data:
     - id: amphion/Emilia-Dataset
       name: Emilia Dataset

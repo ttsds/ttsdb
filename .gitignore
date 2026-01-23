@@ -9,3 +9,7 @@ models/**/huggingface/
 
 # Environment variables
 .env
+
+*.code-workspace
+
+cog_tts

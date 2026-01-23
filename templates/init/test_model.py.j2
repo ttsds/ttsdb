@@ -38,19 +38,71 @@ class TestModelImport:
         assert {{ class_name }}._package_name == "{{ import_name }}"
 
 
-# Uncomment and implement when model is ready for integration tests
-# class TestModelSynthesis:
-#     """Integration tests for synthesis."""
-#     
-#     @pytest.fixture
-#     def model(self):
-#         from {{ import_name }} import {{ class_name }}
-#         return {{ class_name }}(model_id="...")
-#     
-#     def test_synthesize_returns_audio(self, model):
-#         audio, sr = model.synthesize(
-#             text="Hello world",
-#             reference_audio="path/to/reference.wav",
-#         )
-#         assert audio is not None
-#         assert sr > 0
+# Integration tests - require model weights to be downloaded
+@pytest.mark.integration
+class TestModelIntegration:
+    """Integration tests for {{ model_name }} synthesis.
+    
+    These tests require:
+    - Model weights to be downloaded (run: just hf prepare {{ folder_name }})
+    
+    Run with: just test-integration {{ folder_name }}
+    """
+    
+    @pytest.fixture
+    def model(self, weights_path):
+        """Load the {{ model_name }} model from local weights directory."""
+        from {{ import_name }} import {{ class_name }}
+        
+        if not weights_path.exists():
+            pytest.skip(f"Weights not found at {weights_path}. Run: just hf prepare {{ folder_name }}")
+        
+        return {{ class_name }}(model_path=str(weights_path))
+    
+    def test_model_loads(self, model):
+        """Model should load successfully."""
+        assert model is not None
+        assert model.model is not None
+    
+    def test_synthesize_returns_audio(self, model, reference_audio, test_data):
+        """Synthesis should return audio array and sample rate."""
+        sentences = test_data.get("test_sentences", {}).get("en", [])
+        if not sentences:
+            pytest.skip("No test sentences found")
+        
+        text = sentences[0]["text"]
+        audio, sr = model.synthesize(
+            text=text,
+            reference_audio=reference_audio["path"],
+            text_reference=reference_audio["text"],
+            language=reference_audio["language"],
+        )
+        
+        assert audio is not None
+        assert len(audio) > 0
+        assert sr > 0
+    
+    def test_generate_audio_examples(self, model, reference_audio, test_data, audio_examples_dir):
+        """Generate audio examples and save to audio_examples/ directory."""
+        import soundfile as sf
+        
+        sentences = test_data.get("test_sentences", {}).get("en", [])
+        if not sentences:
+            pytest.skip("No test sentences found")
+        
+        for i, sentence in enumerate(sentences):
+            text = sentence["text"]
+            audio, sr = model.synthesize(
+                text=text,
+                reference_audio=reference_audio["path"],
+                text_reference=reference_audio["text"],
+                language=reference_audio["language"],
+            )
+            
+            # Save the audio
+            output_path = audio_examples_dir / f"en_test_{i+1:03d}.wav"
+            sf.write(str(output_path), audio, sr)
+            print(f"Saved: {output_path}")
+            
+            assert output_path.exists()
+            assert output_path.stat().st_size > 0

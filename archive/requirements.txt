@@ -1,5 +1,0 @@
-PyYAML==6.0.2
-librosa==0.10.2
-openai-whisper==20231117
-Levenshtein==0.25.1
-ffmpeg
