@@ -1,8 +1,0 @@
-parameters:
-  text: gen_text
-  speaker_reference: ref_audio
-  text_reference: ref_text
-  language: null
-supported_languages:
-  - en
-  - zh

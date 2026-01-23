@@ -1,0 +1,48 @@
+metadata:
+  name: "{{ model_name }}"
+  training_data:
+    - id: # TODO: HuggingFace dataset ID
+      name: # TODO: Dataset name
+      url: # TODO: Dataset URL
+      hours: # TODO: Number of hours
+  languages:
+    - en
+  num_parameters: # TODO: Number of parameters (in millions)
+  release_date: # TODO: YYYY-MM-DD
+  target_representation:
+    - Codec # TODO: Codec, Mel, etc.
+  sample_rate: 24000
+  architecture:
+    - # TODO: Architecture description
+dependencies:
+  python: "{{ python_version }}"
+  torch: "{{ torch_version }}"
+code:
+  url: # TODO: GitHub URL
+  commit: # TODO: Commit hash
+  root: # TODO: Root directory in repo
+  license: # TODO: License identifier (mit, apache-2.0, etc.)
+weights:
+  url: # TODO: HuggingFace model URL
+  commit: # TODO: Commit hash
+  license: # TODO: License identifier
+external:
+  citations:
+    - id: {{ folder_name }}
+      text: >
+        @article{ {{ folder_name }},
+          title={ {{ model_name }} },
+          author={},
+          journal={arXiv preprint arXiv:},
+          year={}
+        }
+  paper_urls:
+    - # TODO: Paper URL
+api:
+  parameters:
+    text: text
+    language: language
+    speaker_reference: speaker_reference
+    text_reference: text_reference
+  providers:
+    - # TODO: replicate, huggingface, local, etc.

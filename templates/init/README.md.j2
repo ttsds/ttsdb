@@ -1,0 +1,22 @@
+# {{ model_name }}
+
+TODO: Add model description.
+
+## Installation
+
+```bash
+cd models/{{ folder_name }}
+uv sync
+```
+
+## Usage
+
+```python
+from {{ import_name }} import {{ class_name }}
+
+model = {{ class_name }}(model_id="TODO: huggingface/model-id")
+audio, sr = model.synthesize(
+    text="Hello, world!",
+    reference_audio="path/to/reference.wav"
+)
+```

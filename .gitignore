@@ -1,1 +1,11 @@
+.python-version
+.venv
+build
+archive
+*.egg-info
+
+# Generated HuggingFace model cards
+models/**/huggingface/
+
+# Environment variables
 .env
