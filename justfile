@@ -1,27 +1,46 @@
+set dotenv-load
+
+default_python := `cat .python-version`
+hf_repo := env_var_or_default("TTSDB_HF_REPO", "ttsds")
+
 models := `ls models`
 
 # Initialize a new model from templates
-init name python="3.10" torch=">=2.0.0":
-    python builder/init_model.py "{{name}}" --python {{python}} --torch "{{torch}}"
+#
+# Python version knobs:
+# - python_venv: concrete interpreter for local venv creation (default: .python-version)
+# - python_requires: PEP 440 specifier for supported versions (default: ==<python_venv>.*)
+init name python_venv=default_python python_requires="" torch=">=2.0.0":
+    python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}"
 
 # Initialize a new model (dry run)
-init-dry name python="3.10" torch=">=2.0.0":
-    python builder/init_model.py "{{name}}" --python {{python}} --torch "{{torch}}" --dry-run
+init-dry name python_venv=default_python python_requires="" torch=">=2.0.0":
+    python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}" --dry-run
 
 # Fetch external source code for a model
 fetch model:
     python builder/vendor.py "models/{{model}}"
 
 # Set up a model's development environment (fetch vendor, create venv, install deps)
-# Usage: just setup <model> [cpu|gpu] [torch_version]  (default: cpu, version from config.yaml)
-setup model device="cpu" torch_version="":
+# Usage: just setup <model> [cpu|gpu] [torch_version] [python]
+#   - python: optional concrete interpreter version for venv (e.g. "3.11")
+setup model device="cpu" torch_version="" python="":
     #!/usr/bin/env bash
     set -euo pipefail
     cd models/{{model}}
     
-    # Read Python version from config.yaml
-    PYTHON_VERSION=$(grep -A2 "dependencies:" config.yaml | grep "python:" | sed 's/.*python: *"\([^"]*\)".*/\1/' || echo "3.10")
-    PYTHON_VERSION=${PYTHON_VERSION:-"3.10"}
+    # Pick Python interpreter for venv
+    # Prefer CLI arg > dependencies.python_venv > default (.python-version)
+    PYTHON_VERSION="{{python}}"
+    if [ -z "$PYTHON_VERSION" ]; then
+        PYTHON_VERSION=$(
+            grep -A5 "^dependencies:" config.yaml 2>/dev/null \
+              | grep -E '^[[:space:]]*python_venv:' \
+              | sed -E 's/.*python_venv:[[:space:]]*"?([^"]*)"?/\1/' \
+              || true
+        )
+    fi
+    PYTHON_VERSION=${PYTHON_VERSION:-"{{default_python}}"}
     echo "Setting up {{model}} with Python ${PYTHON_VERSION} ({{device}})..."
     
     # Fetch vendor code if config has code.url
@@ -68,14 +87,13 @@ setup model device="cpu" torch_version="":
 test model:
     cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v
 
-# Run integration tests for a model (requires weights: just hf prepare <model>)
+# Run integration tests for a model (requires weights: just hf-weights-prepare <model>)
 test-integration model:
     cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -m integration
 
 # Build a specific model
 build model:
     @echo "Building {{model}}..."
-    python builder/generate_files.py --model {{model}}
     cd models/{{model}} && uv build
     docker build -t ttsdb-{{model}} models/{{model}}
 
@@ -85,17 +103,121 @@ build-all:
         just build $m; \
     done
 
-# HuggingFace operations: prepare, readme, upload, publish
-# Usage: just hf <action> <model> [options]
-#   just hf prepare maskgct [--force]  - Download/prepare weights locally
-#   just hf readme maskgct             - Generate README
-#   just hf upload maskgct             - Upload to ttsds/<model_id>
-#   just hf publish maskgct            - Do all: prepare + readme + upload
-hf action model *args:
-    python builder/huggingface.py {{action}} "models/{{model}}" {{args}}
+# HuggingFace operations are split into weights and spaces, mirroring the PyPI pattern.
+#
+# Weights: prepare/readme/upload/publish
+hf-weights-prepare model *args:
+    python builder/huggingface.py prepare "models/{{model}}" {{args}}
 
-# Publish all models to HuggingFace (prepare + readme + upload)
-hf-all repo="ttsds/models":
+hf-weights-readme model *args:
+    python builder/huggingface.py readme "models/{{model}}" {{args}}
+
+hf-weights-upload model *args:
+    python builder/huggingface.py upload "models/{{model}}" {{args}}
+
+hf-weights-publish model repo=hf_repo force="false" dry_run="false":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{force}}" = "true" ]; then
+        just hf-weights-prepare "{{model}}" --force
+    else
+        just hf-weights-prepare "{{model}}"
+    fi
+    just hf-weights-readme "{{model}}"
+    if [ "{{dry_run}}" = "true" ]; then
+        just hf-weights-upload "{{model}}" --repo "{{repo}}" --dry-run
+    else
+        just hf-weights-upload "{{model}}" --repo "{{repo}}"
+    fi
+
+hf-weights-publish-all repo=hf_repo force="false" dry_run="false":
     for m in {{models}}; do \
-        just hf publish $m --repo {{repo}}; \
+        just hf-weights-publish $m --repo {{repo}} --force={{force}} --dry-run={{dry_run}}; \
     done
+
+# Spaces: generate/upload/publish
+hf-space-generate model *args:
+    python builder/huggingface.py space "models/{{model}}" {{args}}
+
+hf-space-upload model *args:
+    python builder/huggingface.py space-upload "models/{{model}}" {{args}}
+
+hf-space-publish model repo=hf_repo *args:
+    just hf-space-generate {{model}} {{args}}
+    just hf-space-upload {{model}} --repo {{repo}} {{args}}
+
+hf-space-publish-all repo=hf_repo *args:
+    for m in {{models}}; do \
+        just hf-space-publish $m --repo {{repo}} {{args}}; \
+    done
+
+# Run a model's space locally for testing
+space-run model:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd models/{{model}}
+    
+    # Generate space files if they don't exist
+    if [ ! -f space/app.py ]; then
+        echo "Generating space files..."
+        python ../../builder/huggingface.py space .
+    fi
+    
+    # Activate the venv
+    source .venv/bin/activate
+    
+    # Install gradio if not present
+    uv pip install gradio
+    
+    # Run the space
+    echo "Starting {{model}} space at http://localhost:7860..."
+    cd space && python app.py
+
+# Build a model package for PyPI
+pypi-build model:
+    @echo "Building {{model}} package..."
+    cd models/{{model}} && rm -rf dist/ && uv build --no-sources --verbose
+
+# Upload a model package to PyPI (requires UV_PUBLISH_TOKEN or --token)
+# Usage: just pypi-upload <model> [--token <token>]
+pypi-upload model *args:
+    @echo "Uploading {{model}} to PyPI..."
+    cd models/{{model}} && uv publish {{args}}
+
+# Upload a model package to TestPyPI for testing
+pypi-upload-test model *args:
+    @echo "Uploading {{model}} to TestPyPI..."
+    cd models/{{model}} && uv publish --publish-url https://test.pypi.org/legacy/ {{args}}
+
+# Build and upload a model to PyPI in one step
+pypi-publish model *args:
+    just pypi-build {{model}}
+    just pypi-upload {{model}} {{args}}
+
+# Build and upload all models to PyPI
+pypi-publish-all *args:
+    for m in {{models}}; do \
+        just pypi-publish $m {{args}}; \
+    done
+
+# ---- Core package (ttsdb-core) PyPI publishing ----
+
+# Build the core package for PyPI
+pypi-build-core:
+    @echo "Building ttsdb-core package..."
+    cd core && rm -rf dist/ && uv build --no-sources --verbose
+
+# Upload the core package to PyPI (requires UV_PUBLISH_TOKEN or --token)
+pypi-upload-core *args:
+    @echo "Uploading ttsdb-core to PyPI..."
+    cd core && uv publish {{args}}
+
+# Upload the core package to TestPyPI
+pypi-upload-core-test *args:
+    @echo "Uploading ttsdb-core to TestPyPI..."
+    cd core && uv publish --publish-url https://test.pypi.org/legacy/ {{args}}
+
+# Build and upload the core package in one step
+pypi-publish-core *args:
+    just pypi-build-core
+    just pypi-upload-core {{args}}

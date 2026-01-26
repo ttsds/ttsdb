@@ -16,11 +16,29 @@ import argparse
 import re
 import subprocess
 import sys
+import os
 from pathlib import Path
 from typing import Optional
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+
+try:
+    # When run as a module: python -m builder.huggingface ...
+    from .languages import (  # type: ignore
+        get_language_name,
+        get_language,
+        get_language_choices_for_gradio,
+    )
+    from .names import normalize_name  # type: ignore
+except Exception:
+    # When run as a script: python builder/huggingface.py ...
+    from languages import (  # type: ignore
+        get_language_name,
+        get_language,
+        get_language_choices_for_gradio,
+    )
+    from names import normalize_name  # type: ignore
 
 
 # License ID to human-readable name mapping
@@ -37,79 +55,6 @@ LICENSE_NAMES = {
     "other": "Other (see original repository)",
 }
 
-# Language code to name mapping (ISO 639-1)
-LANGUAGE_NAMES = {
-    "en": "English",
-    "zh": "Chinese",
-    "ko": "Korean",
-    "ja": "Japanese",
-    "fr": "French",
-    "de": "German",
-    "es": "Spanish",
-    "it": "Italian",
-    "pt": "Portuguese",
-    "ru": "Russian",
-    "ar": "Arabic",
-    "hi": "Hindi",
-    "nl": "Dutch",
-    "pl": "Polish",
-    "tr": "Turkish",
-    "vi": "Vietnamese",
-    "th": "Thai",
-    "id": "Indonesian",
-    "ms": "Malay",
-    "sv": "Swedish",
-    "da": "Danish",
-    "no": "Norwegian",
-    "fi": "Finnish",
-    "cs": "Czech",
-    "el": "Greek",
-    "he": "Hebrew",
-    "uk": "Ukrainian",
-    "ro": "Romanian",
-    "hu": "Hungarian",
-    "bg": "Bulgarian",
-    "hr": "Croatian",
-    "sk": "Slovak",
-    "sl": "Slovenian",
-    "et": "Estonian",
-    "lv": "Latvian",
-    "lt": "Lithuanian",
-    "fa": "Persian",
-    "bn": "Bengali",
-    "ta": "Tamil",
-    "te": "Telugu",
-    "mr": "Marathi",
-    "gu": "Gujarati",
-    "kn": "Kannada",
-    "ml": "Malayalam",
-    "pa": "Punjabi",
-    "ur": "Urdu",
-}
-
-
-def get_language_name(code: str) -> str:
-    """Get full language name from code."""
-    return LANGUAGE_NAMES.get(code, code)
-
-
-def normalize_name(name: str) -> dict:
-    """Generate all name variants from a model name."""
-    model_name = name
-    folder_name = name.lower().replace("_", "-").replace(" ", "-")
-    folder_name = re.sub(r"-+", "-", folder_name)
-    package_name = folder_name
-    import_name = "ttsdb_" + folder_name.replace("-", "_")
-    class_name = re.sub(r"[-\s]+", "", name)
-    
-    return {
-        "model_name": model_name,
-        "folder_name": folder_name,
-        "package_name": package_name,
-        "import_name": import_name,
-        "class_name": class_name,
-    }
-
 
 def load_config(model_dir: Path) -> dict:
     """Load config.yaml from model directory."""
@@ -119,6 +64,20 @@ def load_config(model_dir: Path) -> dict:
     
     with open(config_path) as f:
         return yaml.safe_load(f)
+
+
+def _load_pyproject_version(model_dir: Path) -> str:
+    """Read [project].version from pyproject.toml in model_dir."""
+    pyproject_path = model_dir / "pyproject.toml"
+    if not pyproject_path.exists():
+        return "0.0.0"
+    try:
+        import tomllib  # py>=3.11
+    except Exception:  # pragma: no cover
+        import tomli as tomllib  # type: ignore
+    with open(pyproject_path, "rb") as f:
+        data = tomllib.load(f)
+    return str(data.get("project", {}).get("version", "0.0.0"))
 
 
 def get_huggingface_dir(model_dir: Path) -> Path:
@@ -154,7 +113,7 @@ def generate_readme(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
     
     # Set up Jinja2
     repo_root = Path(__file__).parent.parent
-    templates_dir = repo_root / "templates" / "huggingface"
+    templates_dir = repo_root / "templates" / "weights"
     env = Environment(
         loader=FileSystemLoader(str(templates_dir)),
         keep_trailing_newline=True,
@@ -167,6 +126,7 @@ def generate_readme(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
     # Prepare template context
     context = {
         **names,
+        "description": (metadata.get("description") or "").rstrip(),
         "weights_license": weights.get("license", "other"),
         "weights_license_name": LICENSE_NAMES.get(weights.get("license", "other"), "Other"),
         "code_license": code.get("license", "other"),
@@ -339,7 +299,7 @@ def upload_weights(
     if not has_weights:
         raise FileNotFoundError(
             f"No weight files found at {hf_dir}\n"
-            "Run 'just hf prepare <model>' first to download/prepare weights."
+            "Run 'just hf-weights-prepare <model>' first to download/prepare weights."
         )
     
     if dry_run:
@@ -373,39 +333,195 @@ def upload_weights(
     return url
 
 
-def publish_weights(
+def get_space_dir(model_dir: Path) -> Path:
+    """Get the local space directory for a model."""
+    return model_dir / "space"
+
+
+def generate_space(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
+    """Generate HuggingFace Space files from model config.
+    
+    Args:
+        model_dir: Path to the model directory containing config.yaml.
+        output_dir: Output directory for space files. Defaults to model_dir/space/.
+        
+    Returns:
+        Path to the generated space directory.
+    """
+    config = load_config(model_dir)
+    metadata = config.get("metadata", {})
+    code = config.get("code", {})
+    weights = config.get("weights", {})
+    external = config.get("external", {})
+    dependencies = config.get("dependencies", {}) or {}
+    package_version = _load_pyproject_version(model_dir)
+    
+    # Load test_data.yaml for examples
+    test_data_path = model_dir / "test_data.yaml"
+    test_data = {}
+    if test_data_path.exists():
+        with open(test_data_path) as f:
+            test_data = yaml.safe_load(f) or {}
+    
+    # Get name variants
+    names = normalize_name(metadata.get("name", model_dir.name))
+    
+    # Set up output directory
+    if output_dir is None:
+        output_dir = get_space_dir(model_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Set up Jinja2
+    repo_root = Path(__file__).parent.parent
+    templates_dir = repo_root / "templates" / "space"
+    env = Environment(
+        loader=FileSystemLoader(str(templates_dir)),
+        keep_trailing_newline=True,
+    )
+    
+    # Get language codes and names
+    language_codes = metadata.get("languages", [])
+    language_names = [get_language_name(code) for code in language_codes]
+    language_choices = get_language_choices_for_gradio(language_codes)
+    
+    # Build examples from test_data (combining test sentences with reference audio)
+    test_sentences = test_data.get("test_sentences", {})
+    reference_audio_data = test_data.get("reference_audio", {})
+    examples = []
+    
+    # Create examples directory for reference audio files
+    examples_dir = output_dir / "examples"
+    examples_dir.mkdir(parents=True, exist_ok=True)
+    
+    for lang_code, sentences in test_sentences.items():
+        # Get reference audio for this language
+        ref_data = reference_audio_data.get(lang_code, {})
+        ref_url = ref_data.get("url", "")
+        ref_text = ref_data.get("text", "")
+        
+        # Download reference audio if URL is provided
+        ref_audio_path = ""
+        if ref_url:
+            # Determine file extension from URL
+            ext = Path(ref_url).suffix or ".wav"
+            ref_audio_filename = f"ref_{lang_code}{ext}"
+            ref_audio_local = examples_dir / ref_audio_filename
+            
+            if not ref_audio_local.exists():
+                try:
+                    import urllib.request
+                    print(f"Downloading reference audio for {lang_code}...")
+                    urllib.request.urlretrieve(ref_url, ref_audio_local)
+                    print(f"  -> {ref_audio_local}")
+                except Exception as e:
+                    print(f"Warning: Failed to download reference audio for {lang_code}: {e}")
+            
+            if ref_audio_local.exists():
+                # Use relative path from space root
+                ref_audio_path = f"examples/{ref_audio_filename}"
+        
+        for sentence in sentences:
+            examples.append({
+                "text": sentence.get("text", ""),
+                "language": lang_code,
+                "reference_audio": ref_audio_path,
+                "reference_text": ref_text,
+            })
+    
+    # Prepare template context
+    context = {
+        **names,
+        "description": (metadata.get("description") or "").rstrip(),
+        "python_venv": str(dependencies.get("python_venv") or "3.10"),
+        "hf_repo": (os.environ.get("TTSDB_HF_REPO") or "ttsds").strip(),
+        "package_version": package_version,
+        "weights_license": weights.get("license", "other"),
+        "weights_url": weights.get("url", ""),
+        "code_url": code.get("url", ""),
+        "language_codes": language_codes,
+        "language_names": language_names,
+        "language_choices": language_choices,
+        "architecture": metadata.get("architecture", []),
+        "sample_rate": metadata.get("sample_rate", 22050),
+        "num_parameters": metadata.get("num_parameters", "Unknown"),
+        "release_date": metadata.get("release_date", ""),
+        "citations": external.get("citations", []),
+        "paper_urls": external.get("paper_urls", []),
+        "examples": examples,
+    }
+    
+    # Generate all space files
+    for template_name in ["app.py.j2", "requirements.txt.j2", "README.md.j2"]:
+        template = env.get_template(template_name)
+        content = template.render(**context)
+        
+        output_name = template_name.replace(".j2", "")
+        output_path = output_dir / output_name
+        output_path.write_text(content)
+        print(f"Generated {output_path}")
+    
+    return output_dir
+
+
+def upload_space(
     model_dir: Path,
     repo_id: str = "ttsds",
-    force: bool = False,
     dry_run: bool = False,
 ) -> str:
-    """Prepare, generate README, and upload weights in one step.
+    """Upload space to HuggingFace Spaces.
     
     Args:
         model_dir: Path to model directory with config.yaml.
-        repo_id: Target HuggingFace org or repository.
-        force: If True, re-download even if weights exist.
+        repo_id: Target HuggingFace org or space repo.
         dry_run: If True, print what would be done without uploading.
         
     Returns:
-        URL to the uploaded model.
+        URL to the uploaded space.
     """
-    print("=" * 60)
-    print("Step 1/3: Preparing weights...")
-    print("=" * 60)
-    prepare_weights(model_dir, force=force)
+    model_dir = Path(model_dir).resolve()
+    space_dir = get_space_dir(model_dir)
     
-    print()
-    print("=" * 60)
-    print("Step 2/3: Generating README...")
-    print("=" * 60)
-    generate_readme(model_dir)
+    config = load_config(model_dir)
+    metadata = config.get("metadata", {})
     
-    print()
-    print("=" * 60)
-    print("Step 3/3: Uploading to HuggingFace...")
-    print("=" * 60)
-    return upload_weights(model_dir, repo_id, dry_run)
+    model_id = metadata.get("id", model_dir.name)
+    
+    # If repo_id is just an org name (no /), create org/model_id-demo space
+    if "/" not in repo_id:
+        repo_id = f"{repo_id}/{model_id}"
+    
+    # Check that space has been generated
+    if not space_dir.exists() or not (space_dir / "app.py").exists():
+        raise FileNotFoundError(
+            f"No space found at {space_dir}\n"
+            "Run 'just hf-space-generate <model>' first to generate space files."
+        )
+    
+    if dry_run:
+        print(f"Would upload space for {model_id}")
+        print(f"  Source: {space_dir}")
+        print(f"  Target: {repo_id}")
+        return f"https://huggingface.co/spaces/{repo_id}"
+    
+    # Upload to HuggingFace Spaces
+    print(f"Uploading space to {repo_id}...")
+    from huggingface_hub import HfApi
+    
+    api = HfApi()
+    
+    # Create space repo if it doesn't exist
+    api.create_repo(repo_id=repo_id, repo_type="space", space_sdk="gradio", exist_ok=True)
+    
+    api.upload_folder(
+        folder_path=str(space_dir),
+        repo_id=repo_id,
+        repo_type="space",
+        commit_message=f"Update {model_id} space",
+    )
+    
+    url = f"https://huggingface.co/spaces/{repo_id}"
+    print(f"✓ Uploaded to {url}")
+    return url
 
 
 def main():
@@ -452,8 +568,11 @@ Examples:
   # Dry run (show what would be done)
   %(prog)s upload models/maskgct --dry-run
   
-  # Do everything: prepare + readme + upload
-  %(prog)s publish models/maskgct
+  # Generate space files
+  %(prog)s space models/maskgct
+  
+  # Upload space to HuggingFace
+  %(prog)s space-upload models/maskgct
         """,
     )
     
@@ -490,21 +609,28 @@ Examples:
         help="Show what would be done without uploading"
     )
     
-    # publish subcommand (prepare + readme + upload)
-    publish_parser = subparsers.add_parser(
-        "publish", 
-        help="Prepare, generate README, and upload in one step"
+    # space subcommand (generate space files)
+    space_parser = subparsers.add_parser(
+        "space", 
+        help="Generate HuggingFace Space files (app.py, requirements.txt, README.md)"
     )
-    publish_parser.add_argument("model_dir", type=Path, help="Model directory")
-    publish_parser.add_argument(
+    space_parser.add_argument("model_dir", type=Path, help="Model directory")
+    space_parser.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="Output directory (default: <model_dir>/space/)"
+    )
+    
+    # space-upload subcommand
+    space_upload_parser = subparsers.add_parser(
+        "space-upload", 
+        help="Upload space to HuggingFace Spaces"
+    )
+    space_upload_parser.add_argument("model_dir", type=Path, help="Model directory")
+    space_upload_parser.add_argument(
         "--repo", "-r", default="ttsds",
-        help="Target HuggingFace org or repo (default: ttsds → ttsds/<model_id>)"
+        help="Target HuggingFace org or space repo (default: ttsds → ttsds/<model_id>)"
     )
-    publish_parser.add_argument(
-        "--force", "-f", action="store_true",
-        help="Force re-download even if weights exist"
-    )
-    publish_parser.add_argument(
+    space_upload_parser.add_argument(
         "--dry-run", "-n", action="store_true",
         help="Show what would be done without uploading"
     )
@@ -517,8 +643,10 @@ Examples:
         generate_readme(args.model_dir, args.output)
     elif args.command == "upload":
         upload_weights(args.model_dir, args.repo, args.dry_run)
-    elif args.command == "publish":
-        publish_weights(args.model_dir, args.repo, args.force, args.dry_run)
+    elif args.command == "space":
+        generate_space(args.model_dir, args.output)
+    elif args.command == "space-upload":
+        upload_space(args.model_dir, args.repo, args.dry_run)
 
 
 if __name__ == "__main__":

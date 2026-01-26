@@ -20,7 +20,12 @@ pipeline_tag: text-to-speech
 > Original weights: [{{ weights_url }}]({{ weights_url }})
 > Original code: [{{ code_url }}]({{ code_url }})
 
+{% if description %}
+{{ description }}
+
+{% else %}
 {{ model_name }} is a {{ architecture | join(", ") }} text-to-speech model{% if language_names %} supporting {{ language_names | join(", ") }}{% endif %}.
+{% endif %}
 
 ## Original Work
 

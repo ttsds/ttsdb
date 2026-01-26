@@ -1,6 +1,11 @@
 metadata:
   name: "{{ model_name }}"
   id: "{{ folder_name }}"
+  # Markdown description used for README generation.
+  # Tip: use a YAML block scalar (|) to keep formatting.
+  description: |
+    TODO: Add a short markdown description of the model.
+
   training_data:
     - id: # TODO: HuggingFace dataset ID
       name: # TODO: Dataset name
@@ -16,7 +21,19 @@ metadata:
   architecture:
     - # TODO: Architecture description
 dependencies:
-  python: "{{ python_version }}"
+  # Supported Python versions for this model package (PEP 440 specifier string).
+  # Examples:
+  #   ">=3.10,<3.12"   (min/max)
+  #   "==3.10.*"       (pinned minor line)
+  python: "{{ python_requires }}"
+  # Optional: explicitly list tested interpreter versions (human-facing).
+  # Note: packaging metadata (`requires-python`) cannot express disjoint sets well,
+  # so keep `python` as a sensible range and use this list for clarity.
+  python_tested:
+    - "{{ python_venv }}"
+  # Concrete interpreter version used by `just setup` when creating a venv.
+  # Override with: `just setup {{ folder_name }} python=3.11`
+  python_venv: "{{ python_venv }}"
   torch: "{{ torch_version }}"
 code:
   url: # TODO: GitHub URL

@@ -20,6 +20,25 @@ __all__ = ["MaskGCT", "MaskGCTModels"]
 # Amphion environment configuration
 _AMPHION_ENV = {"WORK_DIR": "{vendor_path}"}
 
+# Mapping from ISO 639-3 codes to MaskGCT internal codes (ISO 639-1)
+# MaskGCT uses 2-letter codes: en, zh, ja, ko, fr, de
+ISO_639_3_TO_MASKGCT = {
+    "eng": "en",  # English
+    "zho": "zh",  # Chinese
+    "cmn": "zh",  # Mandarin Chinese -> zh
+    "jpn": "ja",  # Japanese
+    "kor": "ko",  # Korean
+    "fra": "fr",  # French
+    "deu": "de",  # German
+    # Also accept the 2-letter codes directly for backwards compatibility
+    "en": "en",
+    "zh": "zh",
+    "ja": "ja",
+    "ko": "ko",
+    "fr": "fr",
+    "de": "de",
+}
+
 
 class MaskGCTModels:
     """Container for all MaskGCT model components."""
@@ -94,7 +113,7 @@ class MaskGCT(VoiceCloningTTSBase):
         ...     text="Hello world",
         ...     reference_audio="speaker.wav",
         ...     text_reference="This is the speaker reference text.",
-        ...     language="en"
+        ...     language="eng"  # ISO 639-3 code (or "en" for backwards compatibility)
         ... )
     
     Args:
@@ -254,7 +273,7 @@ class MaskGCT(VoiceCloningTTSBase):
         reference_audio: np.ndarray,
         reference_sample_rate: int,
         text_reference: str = "",
-        language: str = "en",
+        language: str = "eng",
         target_language: Optional[str] = None,
         target_len: Optional[int] = None,
         **kwargs
@@ -266,7 +285,8 @@ class MaskGCT(VoiceCloningTTSBase):
             reference_audio: Reference audio as numpy array for voice cloning.
             reference_sample_rate: Sample rate of reference audio.
             text_reference: Transcript of the reference audio.
-            language: Language code for the reference audio (default: "en").
+            language: Language code for the reference audio (ISO 639-3 or 639-1).
+                     Supported: eng/en, zho/zh, jpn/ja, kor/ko, fra/fr, deu/de.
             target_language: Language code for the target text. If None, uses 
                            the same as `language`.
             target_len: Target length for the generated audio. If None, 
@@ -278,6 +298,10 @@ class MaskGCT(VoiceCloningTTSBase):
         """
         if target_language is None:
             target_language = language
+        
+        # Map ISO 639-3 codes to MaskGCT internal codes (ISO 639-1)
+        language = ISO_639_3_TO_MASKGCT.get(language, language)
+        target_language = ISO_639_3_TO_MASKGCT.get(target_language, target_language)
         
         # MaskGCT expects a file path, so we need to save the reference audio
         # to a temporary file

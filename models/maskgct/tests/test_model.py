@@ -216,7 +216,7 @@ class TestModelIntegration:
     
     These tests require:
     - Amphion to be vendored in _vendor/source/Amphion
-    - Model weights to be downloaded (run: just hf prepare maskgct)
+    - Model weights to be downloaded (run: just hf-weights-prepare maskgct)
     
     Run with: just test-integration maskgct
     """
@@ -227,7 +227,7 @@ class TestModelIntegration:
         from ttsdb_maskgct import MaskGCT
         
         if not weights_path.exists():
-            pytest.skip(f"Weights not found at {weights_path}. Run: just hf prepare maskgct")
+            pytest.skip(f"Weights not found at {weights_path}. Run: just hf-weights-prepare maskgct")
         
         return MaskGCT(model_path=str(weights_path))
     
@@ -238,55 +238,71 @@ class TestModelIntegration:
     
     def test_synthesize_returns_audio(self, model, reference_audio, test_data):
         """Synthesis should return audio array and sample rate."""
-        sentences = test_data.get("test_sentences", {}).get("en", [])
+        sentences = test_data.get("test_sentences", {}).get("eng", [])
         if not sentences:
-            pytest.skip("No test sentences found")
+            pytest.skip("No English test sentences found")
+        
+        ref = reference_audio.get("eng")
+        if not ref:
+            pytest.skip("No English reference audio found")
         
         text = sentences[0]["text"]
         audio, sr = model.synthesize(
             text=text,
-            reference_audio=reference_audio["path"],
-            text_reference=reference_audio["text"],
-            language=reference_audio["language"],
+            reference_audio=ref["path"],
+            text_reference=ref["text"],
+            language="eng",
         )
         
         assert audio is not None
         assert len(audio) > 0
         assert sr == 24000
     
-    def test_synthesize_with_different_languages(self, model, reference_audio):
+    def test_synthesize_with_different_languages(self, model, reference_audio, test_data):
         """Synthesis should work with different language codes."""
-        for lang in ["en", "zh"]:
+        for lang in ["eng", "zho"]:
+            ref = reference_audio.get(lang)
+            if not ref:
+                print(f"Skipping {lang}: no reference audio")
+                continue
+            
+            sentences = test_data.get("test_sentences", {}).get(lang, [])
+            text = sentences[0]["text"] if sentences else "Test text"
+            
             audio, sr = model.synthesize(
-                text="Test text",
-                reference_audio=reference_audio["path"],
-                text_reference=reference_audio["text"],
+                text=text,
+                reference_audio=ref["path"],
+                text_reference=ref["text"],
                 language=lang,
             )
             assert audio is not None
             assert sr == 24000
     
     def test_generate_audio_examples(self, model, reference_audio, test_data, audio_examples_dir):
-        """Generate audio examples and save to audio_examples/ directory."""
+        """Generate audio examples for all languages and save to audio_examples/ directory."""
         import soundfile as sf
         
-        sentences = test_data.get("test_sentences", {}).get("en", [])
-        if not sentences:
-            pytest.skip("No test sentences found")
+        all_sentences = test_data.get("test_sentences", {})
         
-        for i, sentence in enumerate(sentences):
-            text = sentence["text"]
-            audio, sr = model.synthesize(
-                text=text,
-                reference_audio=reference_audio["path"],
-                text_reference=reference_audio["text"],
-                language=reference_audio["language"],
-            )
+        for lang, sentences in all_sentences.items():
+            ref = reference_audio.get(lang)
+            if not ref:
+                print(f"Skipping {lang}: no reference audio")
+                continue
             
-            # Save the audio
-            output_path = audio_examples_dir / f"en_test_{i+1:03d}.wav"
-            sf.write(str(output_path), audio, sr)
-            print(f"Saved: {output_path}")
-            
-            assert output_path.exists()
-            assert output_path.stat().st_size > 0
+            for i, sentence in enumerate(sentences):
+                text = sentence["text"]
+                audio, sr = model.synthesize(
+                    text=text,
+                    reference_audio=ref["path"],
+                    text_reference=ref["text"],
+                    language=lang,
+                )
+                
+                # Save the audio
+                output_path = audio_examples_dir / f"{lang}_test_{i+1:03d}.wav"
+                sf.write(str(output_path), audio, sr)
+                print(f"Saved: {output_path}")
+                
+                assert output_path.exists()
+                assert output_path.stat().st_size > 0

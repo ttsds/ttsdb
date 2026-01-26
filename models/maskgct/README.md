@@ -27,13 +27,14 @@ audio, sr = model.synthesize(
 
 Generated audio samples from integration tests:
 
-| Text | Audio |
-|------|-------|
-| "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/en_test_001.wav](audio_examples/en_test_001.wav) |
+| Language | Text | Audio |
+|----------|------|-------|
+| English | "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/en_test_001.wav](audio_examples/en_test_001.wav) |
+| Chinese | "視野無限廣，窗外有藍天" | [audio_examples/zh_test_001.wav](audio_examples/zh_test_001.wav) |
 
 To regenerate examples, run:
 ```bash
-just hf prepare maskgct  # Download weights first
+just hf-weights-prepare maskgct  # Download weights first
 just test-integration maskgct
 ```
 

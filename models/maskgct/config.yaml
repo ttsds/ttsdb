@@ -1,18 +1,20 @@
 metadata:
   name: "MaskGCT"
   id: "maskgct"
+  description: |
+    MaskGCT is a zero-shot text-to-speech model using a masked generative codec transformer by [Amphion](https://github.com/open-mmlab/Amphion).
   training_data:
     - id: amphion/Emilia-Dataset
       name: Emilia Dataset
       url: https://huggingface.co/datasets/amphion/Emilia-Dataset
       hours: 100000
-  languages:
-    - en
-    - zh
-    - ko
-    - ja
-    - fr
-    - de
+  languages:  # ISO 639-3 codes
+    - eng  # English
+    - zho  # Chinese
+    - kor  # Korean
+    - jpn  # Japanese
+    - fra  # French
+    - deu  # German
   num_parameters: 1010
   release_date: 2024-10-17
   target_representation:

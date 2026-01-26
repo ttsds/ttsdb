@@ -5,57 +5,28 @@ from __future__ import annotations
 
 import argparse
 import re
+import os
 from pathlib import Path
 from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
 
 
-def normalize_name(name: str) -> dict:
-    """Generate all name variants from a model name.
-    
-    Args:
-        name: The full model name (e.g., "MaskGCT", "XTTS_v2", "F5-TTS")
-        
-    Returns:
-        Dictionary with all name variants:
-        - model_name: Original name for display (e.g., "MaskGCT", "F5-TTS")
-        - folder_name: Lowercase with hyphens (e.g., "maskgct", "f5-tts")
-        - package_name: Same as folder_name (e.g., "maskgct")
-        - import_name: Lowercase with underscores, prefixed (e.g., "ttsdb_maskgct")
-        - class_name: Original with hyphens/spaces removed (e.g., "MaskGCT", "F5TTS")
-    """
-    # Original name for display
-    model_name = name
-    
-    # Folder name: lowercase, underscores to hyphens
-    folder_name = name.lower().replace("_", "-").replace(" ", "-")
-    # Remove consecutive hyphens
-    folder_name = re.sub(r"-+", "-", folder_name)
-    
-    # Package name: same as folder name (pip/uv style)
-    package_name = folder_name
-    
-    # Import name: ttsdb_ prefix, underscores for Python imports
-    import_name = "ttsdb_" + folder_name.replace("-", "_")
-    
-    # Class name: preserve original casing, only remove invalid Python identifier chars
-    # Replace hyphens and spaces (invalid in identifiers), keep underscores
-    class_name = re.sub(r"[-\s]+", "", name)
-    
-    return {
-        "model_name": model_name,
-        "folder_name": folder_name,
-        "package_name": package_name,
-        "import_name": import_name,
-        "class_name": class_name,
-    }
+try:
+    # When run as a module: python -m builder.init_model ...
+    from .names import normalize_name  # type: ignore
+except Exception:
+    # When run as a script: python builder/init_model.py ...
+    from names import normalize_name  # type: ignore
 
 
 def init_model(
     name: str,
     python_version: str = "3.10",
     torch_version: str = ">=2.0.0",
+    python_requires: Optional[str] = None,
+    python_venv: Optional[str] = None,
+    hf_repo: Optional[str] = None,
     output_dir: Optional[Path] = None,
     dry_run: bool = False,
 ) -> Path:
@@ -71,10 +42,46 @@ def init_model(
     Returns:
         Path to the created model directory.
     """
+    # Python version policy:
+    # - Use `python_venv` for the concrete interpreter used by `just setup`.
+    # - Use `python_requires` for packaging metadata (PEP 440 specifier string).
+    # - If only a single version is known to work, prefer pinning to that minor line:
+    #     python_venv="3.11" and python_requires="==3.11.*"
+    #
+    # Backwards-compat:
+    # - `python_version` may still be either a concrete interpreter ("3.11") OR
+    #   a specifier (">=3.10,<3.12"). If `python_requires`/`python_venv` are not
+    #   provided, we infer sensible defaults.
+    python_arg = (python_version or "").strip() or "3.10"
+    python_requires = (python_requires or "").strip() or None
+    python_venv = (python_venv or "").strip() or None
+
+    if python_requires is None and python_venv is None:
+        is_spec = any(op in python_arg for op in ("<", ">", "=", "!", "~", ","))
+        if is_spec:
+            python_requires = python_arg
+            m = re.search(r"(?:>=|==)\s*([0-9]+(?:\.[0-9]+)?)", python_arg)
+            python_venv = m.group(1) if m else "3.10"
+        else:
+            python_venv = python_arg
+            python_requires = f"=={python_venv}.*"
+    else:
+        # Fill missing pieces from the legacy python arg.
+        if python_venv is None:
+            m = re.search(r"([0-9]+(?:\.[0-9]+)?)", python_arg)
+            python_venv = m.group(1) if m else "3.10"
+        if python_requires is None:
+            python_requires = f"=={python_venv}.*"
+
     # Get name variants
     names = normalize_name(name)
-    names["python_version"] = python_version
+    names["python_version"] = python_version  # kept for backwards compatibility in templates
+    names["python_requires"] = python_requires
+    names["python_venv"] = python_venv
     names["torch_version"] = torch_version
+    hf_repo = (hf_repo or os.environ.get("TTSDB_HF_REPO") or "ttsds").strip()
+    names["hf_repo"] = hf_repo
+    names["hf_model_id"] = f"{hf_repo}/{names['folder_name']}"
     
     repo_root = Path(__file__).parent.parent
 
@@ -107,7 +114,9 @@ def init_model(
         print(f"  package_name:    {names['package_name']}")
         print(f"  import_name:     {names['import_name']}")
         print(f"  class_name:      {names['class_name']}")
-        print(f"  python_version:  {names['python_version']}")
+        print(f"  python_support:  {names['python_requires']}")
+        print(f"  python_venv:     {names['python_venv']}")
+        print(f"  hf_repo:         {names['hf_repo']}")
         print(f"  torch_version:   {names['torch_version']}")
         print("\nFiles that would be created:")
         for template_name, output_path in templates:
@@ -156,7 +165,22 @@ Examples:
     parser.add_argument(
         "--python", "-p",
         default="3.10",
-        help="Python version (default: 3.10)",
+        help="Legacy: either a venv interpreter (e.g. 3.11) or a specifier (e.g. >=3.10,<3.12).",
+    )
+    parser.add_argument(
+        "--python-venv",
+        default="",
+        help="Concrete interpreter for venv creation (e.g. 3.11).",
+    )
+    parser.add_argument(
+        "--python-requires",
+        default="",
+        help="PEP 440 specifier for supported Python versions (e.g. ==3.11.* or >=3.10,<3.12).",
+    )
+    parser.add_argument(
+        "--hf-repo",
+        default="",
+        help="HuggingFace org/repo prefix for generated model_id (default: env TTSDB_HF_REPO or 'ttsds').",
     )
     parser.add_argument(
         "--torch", "-t",
@@ -176,7 +200,16 @@ Examples:
     )
     
     args = parser.parse_args()
-    init_model(args.name, args.python, args.torch, args.output, args.dry_run)
+    init_model(
+        args.name,
+        python_version=args.python,
+        torch_version=args.torch,
+        python_requires=args.python_requires,
+        python_venv=args.python_venv,
+        hf_repo=args.hf_repo,
+        output_dir=args.output,
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == "__main__":

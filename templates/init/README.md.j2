@@ -1,12 +1,11 @@
 # {{ model_name }}
 
-TODO: Add model description.
+The model description is sourced from `config.yaml` (`metadata.description`).
 
 ## Installation
 
 ```bash
-cd models/{{ folder_name }}
-uv sync
+just setup {{ folder_name }}
 ```
 
 ## Usage
@@ -14,7 +13,7 @@ uv sync
 ```python
 from {{ import_name }} import {{ class_name }}
 
-model = {{ class_name }}(model_id="TODO: huggingface/model-id")
+model = {{ class_name }}(model_id="{{ hf_model_id }}")
 audio, sr = model.synthesize(
     text="Hello, world!",
     reference_audio="path/to/reference.wav"
@@ -25,9 +24,10 @@ audio, sr = model.synthesize(
 
 Generated audio samples from integration tests:
 
-| Text | Audio |
-|------|-------|
-| "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/en_test_001.wav](audio_examples/en_test_001.wav) |
+| Language | Text | Audio |
+|----------|------|-------|
+| English | "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/en_test_001.wav](audio_examples/en_test_001.wav) |
+| Chinese | "視野無限廣，窗外有藍天" | [audio_examples/zh_test_001.wav](audio_examples/zh_test_001.wav) |
 
 To regenerate examples, run:
 ```bash

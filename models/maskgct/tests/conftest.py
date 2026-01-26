@@ -50,22 +50,30 @@ def test_data():
 
 @pytest.fixture
 def reference_audio(test_data, tmp_path):
-    """Download and provide reference audio for testing."""
-    ref_info = test_data.get("reference_audio", {})
-    url = ref_info.get("url")
+    """Download and provide reference audio for all languages."""
+    ref_data = test_data.get("reference_audio", {})
     
-    if not url:
-        pytest.skip("No reference audio URL in test_data.yaml")
+    result = {}
+    for lang, ref_info in ref_data.items():
+        url = ref_info.get("url")
+        if not url:
+            continue
+        
+        # Download to temp file
+        ext = url.split(".")[-1]
+        audio_path = tmp_path / f"reference_{lang}.{ext}"
+        urllib.request.urlretrieve(url, audio_path)
+        
+        result[lang] = {
+            "path": str(audio_path),
+            "text": ref_info.get("text", ""),
+            "language": lang,
+        }
     
-    # Download to temp file
-    audio_path = tmp_path / "reference.mp3"
-    urllib.request.urlretrieve(url, audio_path)
+    if not result:
+        pytest.skip("No reference audio found in test_data.yaml")
     
-    return {
-        "path": str(audio_path),
-        "text": ref_info.get("text", ""),
-        "language": ref_info.get("language", "en"),
-    }
+    return result
 
 
 @pytest.fixture

@@ -1,0 +1,30 @@
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+]
+ignore = [
+  "E501", # line length handled by formatter/line-length
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
+"**/tests/**" = ["B018"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = [
+  "core",
+  "models",
+]
+markers = [
+  "integration: integration tests that require model weights and/or network",
+]
+

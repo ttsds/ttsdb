@@ -1,0 +1,56 @@
+---
+title: {{ model_name }}
+emoji: 🎤
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "4.44.0"
+python_version: "{{ python_venv }}"
+app_file: app.py
+pinned: false
+license: {{ weights_license }}
+---
+
+# {{ model_name }} Text-to-Speech
+
+{% if description %}
+{{ description }}
+{% else %}
+A voice cloning TTS model that can synthesize speech in any voice with just a few seconds of reference audio.
+{% endif %}
+
+## Features
+
+- Zero-shot voice cloning
+- Multiple language support: {{ language_names | join(", ") }}
+- High-quality 24kHz audio output
+
+## Usage
+
+1. Upload a reference audio clip (3-10 seconds recommended)
+2. Enter the transcript of the reference audio
+3. Enter the text you want to synthesize
+4. Select the language
+5. Click "Synthesize"
+
+## Model Information
+
+- **Architecture**: {{ architecture | join(", ") }}
+- **Sample Rate**: {{ sample_rate }} Hz
+- **Parameters**: {{ num_parameters }}M
+
+## Citation
+
+{% for citation in citations %}
+```bibtex
+{{ citation.text }}
+```
+{% endfor %}
+
+## Links
+
+- [Model Weights](https://huggingface.co/{{ hf_repo }}/{{ folder_name }})
+- [Code Repository]({{ code_url }})
+{% for url in paper_urls %}
+- [Paper]({{ url }})
+{% endfor %}
