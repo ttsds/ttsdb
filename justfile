@@ -2,6 +2,7 @@ set dotenv-load
 
 default_python := `cat .python-version`
 hf_repo := env_var_or_default("TTSDB_HF_REPO", "ttsds")
+replicate_repo := env_var_or_default("TTSDB_REPLICATE_REPO", "ttsds")
 
 models := `ls models`
 
@@ -151,13 +152,37 @@ hf-space-publish-all repo=hf_repo *args:
         just hf-space-publish $m --repo {{repo}} {{args}}; \
     done
 
+# Replicate/Cog: generate / build / push / publish (mirrors hf-space and pypi)
+replicate-generate model *args:
+    python builder/huggingface.py replicate "models/{{model}}" {{args}}
+
+replicate-build model:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "models/{{model}}/replicate"
+    cog build
+
+# Push built image to Replicate (default: TTSDB_REPLICATE_REPO/model, e.g. ttsds/maskgct)
+replicate-push model repo=replicate_repo *args:
+    @cd "models/{{model}}/replicate" && cog push "{{repo}}/{{model}}" {{args}}
+
+replicate-publish model repo=replicate_repo *args:
+    just replicate-generate {{model}}
+    just replicate-build {{model}}
+    just replicate-push {{model}} repo={{repo}} {{args}}
+
+replicate-publish-all repo=replicate_repo *args:
+    for m in {{models}}; do \
+        just replicate-publish $m repo={{repo}} {{args}}; \
+    done
+
 # Run a model's space locally for testing
-space-run model:
+hf-space-run model:
     #!/usr/bin/env bash
     set -euo pipefail
     cd models/{{model}}
     
-    # Generate space files if they don't exist
+    # Generate space files if they do not exist
     if [ ! -f space/app.py ]; then
         echo "Generating space files..."
         python ../../builder/huggingface.py space .
@@ -175,8 +200,18 @@ space-run model:
 
 # Build a model package for PyPI
 pypi-build model:
-    @echo "Building {{model}} package..."
-    cd models/{{model}} && rm -rf dist/ && uv build --no-sources --verbose
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Building {{model}} package..."
+    cd "models/{{model}}"
+    rm -rf dist/
+    # Ensure vendored research code is present in the wheel when needed
+    if grep -q "^code:" config.yaml && grep -q "url:" config.yaml 2>/dev/null; then
+        echo "Vendoring upstream code..."
+        python ../../builder/vendor.py .
+    fi
+    # Build wheel only; building sdists can omit vendored code depending on source filtering.
+    uv build --wheel --no-sources --verbose
 
 # Upload a model package to PyPI (requires UV_PUBLISH_TOKEN or --token)
 # Usage: just pypi-upload <model> [--token <token>]

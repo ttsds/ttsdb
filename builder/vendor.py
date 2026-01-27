@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
-from typing import Optional, Union
 
 import yaml
 
@@ -24,12 +24,39 @@ def get_import_name(model_dir: Path) -> str:
     return "ttsdb_" + model_dir.name.replace("-", "_")
 
 
+def _run_model_vendor_patch(model_dir: Path, vendor_root: Path) -> None:
+    """Run an optional model-specific vendoring patch script.
+
+    We don't commit vendored code; any patching/asset stripping must therefore happen
+    at vendoring time. Models can provide a script at:
+      scripts/patch_vendor.py
+    """
+    script = model_dir / "scripts" / "patch_vendor.py"
+    if not script.exists():
+        return
+
+    config_path = model_dir / "config.yaml"
+    print(f"Running vendor patch script: {script}")
+    subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--vendor-root",
+            str(vendor_root),
+            "--config",
+            str(config_path),
+        ],
+        cwd=model_dir,
+        check=True,
+    )
+
+
 def fetch_source(
-    model_dir: Union[str, Path],
+    model_dir: str | Path,
     vendor_dirname: str = "_vendor",
     source_dirname: str = "source",
     clean: bool = True,
-) -> Optional[Path]:
+) -> Path | None:
     """Fetch external source code defined in config.yaml.
     
     Clones the repository at the specified commit, removes .git metadata,
@@ -103,6 +130,9 @@ def fetch_source(
     git_dir = target_dir / ".git"
     if git_dir.exists():
         shutil.rmtree(git_dir)
+
+    # Model-specific patching/asset stripping (optional)
+    _run_model_vendor_patch(model_dir, target_dir)
     
     # Create __init__.py so Python treats _vendor as a package
     (vendor_dir / "__init__.py").touch()

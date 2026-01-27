@@ -1,0 +1,6 @@
+# MaskGCT - Replicate/Cog Python dependencies
+# Generated from config; installs the published ttsdb_maskgct package.
+torch
+torchaudio
+soundfile
+ttsdb_maskgct==0.1.5

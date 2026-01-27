@@ -25,11 +25,24 @@ metadata:
 dependencies:
   python: "3.10"
   torch: ">=2.0.0"
+  system_packages:
+    - build-essential
+    - git
+    - espeak-ng
 code:
   url: https://github.com/open-mmlab/Amphion
   commit: f7cb4b42a7f433496468ed5a3c21c1ea5f6b5380
   root: .
   license: mit
+  # Some upstream repos include large binary assets inside the research code.
+  # These should be extracted into our HuggingFace *weights* repo (and excluded from wheels).
+  vendor_assets:
+    - source: models/tts/maskgct/g2p/sources/g2p_chinese_model/poly_bert_model.onnx
+      dest: vendor_assets/models/tts/maskgct/g2p/sources/g2p_chinese_model/poly_bert_model.onnx
+      patch:
+        # Patch the vendored code to load the ONNX from $TTSDB_VENDOR_ASSETS_DIR if missing.
+        file: models/tts/maskgct/g2p/g2p/chinese_model_g2p.py
+        env: TTSDB_VENDOR_ASSETS_DIR
 weights:
   url: https://huggingface.co/amphion/MaskGCT
   commit: e3c5700

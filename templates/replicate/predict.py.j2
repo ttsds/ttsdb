@@ -1,0 +1,37 @@
+"""{{ model_name }} - Replicate/Cog predictor.
+
+Uses the {{ import_name }} package; no model logic duplicated here.
+"""
+
+import tempfile
+from pathlib import Path
+
+import soundfile as sf
+from cog import BasePredictor, Input, Path as CogPath
+
+from {{ import_name }} import {{ class_name }}
+
+
+DEFAULT_MODEL_ID = "{{ default_model_id }}"
+
+
+class Predictor(BasePredictor):
+    def setup(self):
+        self.model = {{ class_name }}(model_id=DEFAULT_MODEL_ID)
+
+    def predict(
+        self,
+        text: str = Input(description="Text to synthesize"),
+        language: str = Input(description="Language code (ISO 639-3)", default="eng"),
+        speaker_reference: CogPath = Input(description="Reference audio file (3–10 seconds)"),
+        text_reference: str = Input(description="Transcript of the reference audio"),
+    ) -> CogPath:
+        audio, sr = self.model.synthesize(
+            text=text,
+            reference_audio=str(speaker_reference),
+            text_reference=text_reference,
+            language=language,
+        )
+        out = Path(tempfile.mktemp(suffix=".wav"))
+        sf.write(out, audio, sr)
+        return CogPath(str(out))

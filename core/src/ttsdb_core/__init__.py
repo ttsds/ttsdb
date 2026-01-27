@@ -2,20 +2,18 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Union, Optional, Tuple
 
 import numpy as np
-import torch
 import soundfile as sf
+import torch
 from scipy import signal
-from transformers import AutoTokenizer, AutoProcessor
+from transformers import AutoProcessor, AutoTokenizer
 
 from .config import ModelConfig
-from .vendor import setup_vendor_path, get_vendor_path, vendor_context
+from .vendor import get_vendor_path, setup_vendor_path, vendor_context
 
-
-AudioInput = Union[str, Path, np.ndarray, torch.Tensor]
-AudioOutput = Tuple[np.ndarray, int]
+AudioInput = str | Path | np.ndarray | torch.Tensor
+AudioOutput = tuple[np.ndarray, int]
 
 __all__ = [
     "VoiceCloningTTSBase",
@@ -42,13 +40,13 @@ class VoiceCloningTTSBase(ABC):
     """
     
     # Override in subclass to set the package name for config loading
-    _package_name: Optional[str] = None
+    _package_name: str | None = None
     
     def __init__(
         self,
-        model_path: Optional[Union[str, Path]] = None,
-        model_id: Optional[str] = None,
-        device: Optional[Union[str, torch.device]] = None,
+        model_path: str | Path | None = None,
+        model_id: str | None = None,
+        device: str | torch.device | None = None,
         **kwargs
     ):
         """Initialize the voice cloning TTS model.
@@ -73,7 +71,7 @@ class VoiceCloningTTSBase(ABC):
         self.init_kwargs = kwargs
         
         # Load model config from package
-        self.model_config: Optional[ModelConfig] = None
+        self.model_config: ModelConfig | None = None
         if self._package_name:
             try:
                 self.model_config = ModelConfig.from_package(self._package_name)
@@ -83,7 +81,7 @@ class VoiceCloningTTSBase(ABC):
         # Load model components
         self._load_model_components()
     
-    def _setup_device(self, device: Optional[Union[str, torch.device]]) -> torch.device:
+    def _setup_device(self, device: str | torch.device | None) -> torch.device:
         """Set up the computation device.
         
         Args:
@@ -153,8 +151,8 @@ class VoiceCloningTTSBase(ABC):
         self,
         text: str,
         reference_audio: AudioInput,
-        reference_sample_rate: Optional[int] = None,
-        output_sample_rate: Optional[int] = None,
+        reference_sample_rate: int | None = None,
+        output_sample_rate: int | None = None,
         **kwargs
     ) -> AudioOutput:
         """Synthesize speech from text using voice cloning.
@@ -203,8 +201,8 @@ class VoiceCloningTTSBase(ABC):
     def _load_audio(
         self,
         audio_input: AudioInput,
-        sample_rate: Optional[int] = None
-    ) -> Tuple[np.ndarray, int]:
+        sample_rate: int | None = None
+    ) -> tuple[np.ndarray, int]:
         """Load audio from various input formats.
         
         Args:
@@ -214,7 +212,7 @@ class VoiceCloningTTSBase(ABC):
         Returns:
             Tuple of (audio_array, sample_rate).
         """
-        if isinstance(audio_input, (str, Path)):
+        if isinstance(audio_input, str | Path):
             # Load from file
             path = Path(audio_input)
             if not path.exists():
@@ -321,7 +319,7 @@ class VoiceCloningTTSBase(ABC):
         self,
         audio: np.ndarray,
         sample_rate: int,
-        output_path: Union[str, Path],
+        output_path: str | Path,
         format: str = "WAV"
     ):
         """Save audio to file.
@@ -336,7 +334,7 @@ class VoiceCloningTTSBase(ABC):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(output_path), audio, sample_rate, format=format)
     
-    def to(self, device: Union[str, torch.device]):
+    def to(self, device: str | torch.device):
         """Move model to specified device.
         
         Args:
@@ -363,7 +361,7 @@ class VoiceCloningTTSBase(ABC):
         self,
         text: str,
         reference_audio: AudioInput,
-        reference_sample_rate: Optional[int] = None,
+        reference_sample_rate: int | None = None,
         **kwargs
     ) -> AudioOutput:
         """Call the model for synthesis.

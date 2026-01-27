@@ -35,11 +35,24 @@ dependencies:
   # Override with: `just setup {{ folder_name }} python=3.11`
   python_venv: "{{ python_venv }}"
   torch: "{{ torch_version }}"
+  # APT packages used by Space Dockerfile and Replicate cog.yaml. Omit to use default [build-essential, git].
+  system_packages:
+    - build-essential
+    - git
 code:
   url: # TODO: GitHub URL
   commit: # TODO: Commit hash
   root: # TODO: Root directory in repo
   license: # TODO: License identifier (mit, apache-2.0, etc.)
+  # Optional: declare large/binary assets that are shipped with upstream research code.
+  # These can be copied into the HuggingFace weights repo and removed from the vendored code
+  # before building/publishing wheels.
+  # vendor_assets:
+  #   - source: path/inside/upstream/repo/to/asset.bin
+  #     dest: vendor_assets/path/inside/upstream/repo/to/asset.bin
+  #     patch:
+  #       file: path/inside/upstream/repo/to/python_file.py
+  #       env: TTSDB_VENDOR_ASSETS_DIR
 weights:
   url: # TODO: HuggingFace model URL
   commit: # TODO: Commit hash

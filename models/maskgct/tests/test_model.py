@@ -1,8 +1,9 @@
 """Tests for MaskGCT."""
 
 import os
+
 import pytest
-from ttsdb_core import ModelConfig, vendor_context, get_vendor_path
+from ttsdb_core import ModelConfig, get_vendor_path, vendor_context
 
 
 class TestConfig:

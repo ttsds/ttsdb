@@ -17,6 +17,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/{{ import_name }}"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/{{ import_name }}/_vendor/**",
+]
 exclude = [
     # Exclude non-package directories
     "huggingface/",
@@ -55,3 +59,4 @@ exclude = [
 
 [tool.hatch.build.targets.wheel.force-include]
 "config.yaml" = "{{ import_name }}/config.yaml"
+"src/{{ import_name }}/_vendor/source" = "{{ import_name }}/_vendor/source"

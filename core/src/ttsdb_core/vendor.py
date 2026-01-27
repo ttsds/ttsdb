@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Iterator, Optional
 
 from .config import ModelConfig
 
 
-def _get_code_root(config: ModelConfig) -> Optional[str]:
+def _get_code_root(config: ModelConfig) -> str | None:
     """Get code.root from config, handling nested access."""
     try:
         code = config.get("code")
@@ -111,7 +111,7 @@ def get_vendor_path(
 def vendor_context(
     package_name: str,
     cwd: bool = False,
-    env: Optional[Dict[str, str]] = None,
+    env: dict[str, str] | None = None,
 ) -> Iterator[Path]:
     """Context manager for running code that requires specific environment setup.
     
@@ -156,6 +156,14 @@ def vendor_context(
         
         # Change working directory if requested
         if cwd:
+            if not vendor_path.exists():
+                raise FileNotFoundError(
+                    f"Vendored research code not found at {vendor_path}\n"
+                    f"- If you are developing locally: run `just fetch {package_name.replace('ttsdb_', '')}` "
+                    f"or `just setup <model>` to vendor the upstream repo.\n"
+                    f"- If you installed from PyPI/HuggingFace Space: the wheel must include "
+                    f"`{package_name}/_vendor/...` (publish a new release after vendoring)."
+                )
             os.chdir(vendor_path_str)
         
         yield vendor_path

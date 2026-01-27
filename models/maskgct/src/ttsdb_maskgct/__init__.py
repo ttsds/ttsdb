@@ -6,12 +6,17 @@ from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
-import torch
 import safetensors.torch
 import soundfile as sf
+import torch
 from accelerate import load_checkpoint_and_dispatch
-
-from ttsdb_core import VoiceCloningTTSBase, AudioInput, AudioOutput, setup_vendor_path, vendor_context
+from ttsdb_core import (
+    AudioInput,
+    AudioOutput,
+    VoiceCloningTTSBase,
+    setup_vendor_path,
+    vendor_context,
+)
 
 setup_vendor_path("ttsdb_maskgct")
 
@@ -129,12 +134,13 @@ class MaskGCT(VoiceCloningTTSBase):
 
     def __init__(
         self,
-        model_path: Optional[Union[str, Path]] = None,
-        model_id: Optional[str] = None,
-        device: Optional[Union[str, torch.device]] = None,
+        model_path: str | Path | None = None,
+        model_id: str | None = None,
+        device: str | torch.device | None = None,
         **kwargs
     ):
         self._inference_pipeline = None
+        self._weights_base: str | None = None
         super().__init__(model_path=model_path, model_id=model_id, device=device, **kwargs)
 
     def _load_model(self, load_path: str) -> MaskGCTModels:
@@ -146,124 +152,147 @@ class MaskGCT(VoiceCloningTTSBase):
         Returns:
             MaskGCTModels container with all model components.
         """
-        with vendor_context(self._package_name, cwd=True, env=_AMPHION_ENV) as vendor_path:
-            # Import Amphion utilities
-            from models.tts.maskgct.maskgct_utils import (
-                build_semantic_model,
-                build_semantic_codec,
-                build_acoustic_codec,
-                build_t2s_model,
-                build_s2a_model,
-            )
-            from utils.util import load_config
-            
-            # Load config
-            cfg_path = vendor_path / "models/tts/maskgct/config/maskgct.json"
-            cfg = load_config(str(cfg_path))
-            
-            # Build models
-            semantic_model, semantic_mean, semantic_std = build_semantic_model(self.device)
-            semantic_codec = build_semantic_codec(cfg.model.semantic_codec, self.device)
-            codec_encoder, codec_decoder = build_acoustic_codec(
-                cfg.model.acoustic_codec, self.device
-            )
-            t2s_model = build_t2s_model(cfg.model.t2s_model, self.device)
-            s2a_model_1layer = build_s2a_model(cfg.model.s2a_model.s2a_1layer, self.device)
-            s2a_model_full = build_s2a_model(cfg.model.s2a_model.s2a_full, self.device)
-            
-            # Resolve checkpoint path
-            if os.path.isdir(load_path):
-                base = load_path
+        # Resolve checkpoint path early so we can expose it to vendored code (for external assets).
+        if os.path.isdir(load_path):
+            base = load_path
+        else:
+            # Assume HuggingFace model ID - download checkpoints
+            from huggingface_hub import snapshot_download
+            base = snapshot_download(repo_id=load_path)
+        self._weights_base = str(base)
+
+        # Some vendored code loads large binary assets (e.g. ONNX) from disk.
+        # We ship those assets alongside model weights under:
+        #   <weights>/vendor_assets/...
+        # and patch vendored code to fall back to this directory.
+        old_assets_dir = os.environ.get("TTSDB_VENDOR_ASSETS_DIR")
+        os.environ["TTSDB_VENDOR_ASSETS_DIR"] = str(base)
+        try:
+            with vendor_context(self._package_name, cwd=True, env=_AMPHION_ENV) as vendor_path:
+                # Import Amphion utilities
+                from utils.util import load_config
+
+                from models.tts.maskgct.maskgct_utils import (
+                    build_acoustic_codec,
+                    build_s2a_model,
+                    build_semantic_codec,
+                    build_semantic_model,
+                    build_t2s_model,
+                )
+
+                # Load config
+                cfg_path = vendor_path / "models/tts/maskgct/config/maskgct.json"
+                cfg = load_config(str(cfg_path))
+
+                # Build models
+                semantic_model, semantic_mean, semantic_std = build_semantic_model(self.device)
+                semantic_codec = build_semantic_codec(cfg.model.semantic_codec, self.device)
+                codec_encoder, codec_decoder = build_acoustic_codec(
+                    cfg.model.acoustic_codec, self.device
+                )
+                t2s_model = build_t2s_model(cfg.model.t2s_model, self.device)
+                s2a_model_1layer = build_s2a_model(cfg.model.s2a_model.s2a_1layer, self.device)
+                s2a_model_full = build_s2a_model(cfg.model.s2a_model.s2a_full, self.device)
+
+                # Load weights
+                use_gpu = self.device.type == "cuda"
+
+                if use_gpu:
+                    safetensors.torch.load_model(
+                        semantic_codec, os.path.join(base, "semantic_codec/model.safetensors")
+                    )
+                    safetensors.torch.load_model(
+                        codec_encoder, os.path.join(base, "acoustic_codec/model.safetensors")
+                    )
+                    safetensors.torch.load_model(
+                        codec_decoder, os.path.join(base, "acoustic_codec/model_1.safetensors")
+                    )
+                    safetensors.torch.load_model(
+                        t2s_model, os.path.join(base, "t2s_model/model.safetensors")
+                    )
+                    safetensors.torch.load_model(
+                        s2a_model_1layer, os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors")
+                    )
+                    safetensors.torch.load_model(
+                        s2a_model_full, os.path.join(base, "s2a_model/s2a_model_full/model.safetensors")
+                    )
+                else:
+                    # Use accelerate for CPU loading
+                    load_checkpoint_and_dispatch(
+                        semantic_codec,
+                        os.path.join(base, "semantic_codec/model.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+                    load_checkpoint_and_dispatch(
+                        codec_encoder,
+                        os.path.join(base, "acoustic_codec/model.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+                    load_checkpoint_and_dispatch(
+                        codec_decoder,
+                        os.path.join(base, "acoustic_codec/model_1.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+                    load_checkpoint_and_dispatch(
+                        t2s_model,
+                        os.path.join(base, "t2s_model/model.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+                    load_checkpoint_and_dispatch(
+                        s2a_model_1layer,
+                        os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+                    load_checkpoint_and_dispatch(
+                        s2a_model_full,
+                        os.path.join(base, "s2a_model/s2a_model_full/model.safetensors"),
+                        device_map={"": "cpu"},
+                    )
+
+                return MaskGCTModels(
+                    semantic_model=semantic_model,
+                    semantic_codec=semantic_codec,
+                    codec_encoder=codec_encoder,
+                    codec_decoder=codec_decoder,
+                    t2s_model=t2s_model,
+                    s2a_model_1layer=s2a_model_1layer,
+                    s2a_model_full=s2a_model_full,
+                    semantic_mean=semantic_mean,
+                    semantic_std=semantic_std,
+                )
+        finally:
+            if old_assets_dir is None:
+                os.environ.pop("TTSDB_VENDOR_ASSETS_DIR", None)
             else:
-                # Assume HuggingFace model ID - download checkpoints
-                from huggingface_hub import snapshot_download
-                base = snapshot_download(repo_id=load_path)
-            
-            # Load weights
-            use_gpu = self.device.type == "cuda"
-            
-            if use_gpu:
-                safetensors.torch.load_model(
-                    semantic_codec, os.path.join(base, "semantic_codec/model.safetensors")
-                )
-                safetensors.torch.load_model(
-                    codec_encoder, os.path.join(base, "acoustic_codec/model.safetensors")
-                )
-                safetensors.torch.load_model(
-                    codec_decoder, os.path.join(base, "acoustic_codec/model_1.safetensors")
-                )
-                safetensors.torch.load_model(
-                    t2s_model, os.path.join(base, "t2s_model/model.safetensors")
-                )
-                safetensors.torch.load_model(
-                    s2a_model_1layer, os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors")
-                )
-                safetensors.torch.load_model(
-                    s2a_model_full, os.path.join(base, "s2a_model/s2a_model_full/model.safetensors")
-                )
-            else:
-                # Use accelerate for CPU loading
-                load_checkpoint_and_dispatch(
-                    semantic_codec,
-                    os.path.join(base, "semantic_codec/model.safetensors"),
-                    device_map={"": "cpu"},
-                )
-                load_checkpoint_and_dispatch(
-                    codec_encoder,
-                    os.path.join(base, "acoustic_codec/model.safetensors"),
-                    device_map={"": "cpu"},
-                )
-                load_checkpoint_and_dispatch(
-                    codec_decoder,
-                    os.path.join(base, "acoustic_codec/model_1.safetensors"),
-                    device_map={"": "cpu"},
-                )
-                load_checkpoint_and_dispatch(
-                    t2s_model,
-                    os.path.join(base, "t2s_model/model.safetensors"),
-                    device_map={"": "cpu"},
-                )
-                load_checkpoint_and_dispatch(
-                    s2a_model_1layer,
-                    os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors"),
-                    device_map={"": "cpu"},
-                )
-                load_checkpoint_and_dispatch(
-                    s2a_model_full,
-                    os.path.join(base, "s2a_model/s2a_model_full/model.safetensors"),
-                    device_map={"": "cpu"},
-                )
-            
-            return MaskGCTModels(
-                semantic_model=semantic_model,
-                semantic_codec=semantic_codec,
-                codec_encoder=codec_encoder,
-                codec_decoder=codec_decoder,
-                t2s_model=t2s_model,
-                s2a_model_1layer=s2a_model_1layer,
-                s2a_model_full=s2a_model_full,
-                semantic_mean=semantic_mean,
-                semantic_std=semantic_std,
-            )
+                os.environ["TTSDB_VENDOR_ASSETS_DIR"] = old_assets_dir
     
     def _get_inference_pipeline(self):
         """Get or create the MaskGCT inference pipeline."""
         if self._inference_pipeline is None:
-            with vendor_context(self._package_name, cwd=True, env=_AMPHION_ENV):
-                from models.tts.maskgct.maskgct_utils import MaskGCT_Inference_Pipeline
-                
-                self._inference_pipeline = MaskGCT_Inference_Pipeline(
-                    self.model.semantic_model,
-                    self.model.semantic_codec,
-                    self.model.codec_encoder,
-                    self.model.codec_decoder,
-                    self.model.t2s_model,
-                    self.model.s2a_model_1layer,
-                    self.model.s2a_model_full,
-                    self.model.semantic_mean,
-                    self.model.semantic_std,
-                    self.device,
-                )
+            old_assets_dir = os.environ.get("TTSDB_VENDOR_ASSETS_DIR")
+            if self._weights_base:
+                os.environ["TTSDB_VENDOR_ASSETS_DIR"] = self._weights_base
+            try:
+                with vendor_context(self._package_name, cwd=True, env=_AMPHION_ENV):
+                    from models.tts.maskgct.maskgct_utils import MaskGCT_Inference_Pipeline
+
+                    self._inference_pipeline = MaskGCT_Inference_Pipeline(
+                        self.model.semantic_model,
+                        self.model.semantic_codec,
+                        self.model.codec_encoder,
+                        self.model.codec_decoder,
+                        self.model.t2s_model,
+                        self.model.s2a_model_1layer,
+                        self.model.s2a_model_full,
+                        self.model.semantic_mean,
+                        self.model.semantic_std,
+                        self.device,
+                    )
+            finally:
+                if old_assets_dir is None:
+                    os.environ.pop("TTSDB_VENDOR_ASSETS_DIR", None)
+                else:
+                    os.environ["TTSDB_VENDOR_ASSETS_DIR"] = old_assets_dir
         
         return self._inference_pipeline
 
@@ -274,8 +303,8 @@ class MaskGCT(VoiceCloningTTSBase):
         reference_sample_rate: int,
         text_reference: str = "",
         language: str = "eng",
-        target_language: Optional[str] = None,
-        target_len: Optional[int] = None,
+        target_language: str | None = None,
+        target_len: int | None = None,
         **kwargs
     ) -> AudioOutput:
         """Synthesize speech from text using MaskGCT.

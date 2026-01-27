@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import yaml
 
 if sys.version_info >= (3, 9):
-    from importlib.resources import files, as_file
+    from importlib.resources import as_file, files
 else:
-    from importlib_resources import files, as_file
+    from importlib_resources import as_file, files
 
 
 class ModelConfig(dict):
@@ -35,21 +35,21 @@ class ModelConfig(dict):
             if isinstance(value, dict):
                 return ModelConfig(value)
             return value
-        except KeyError:
-            raise AttributeError(f"Config has no attribute '{name}'")
+        except KeyError as e:
+            raise AttributeError(f"Config has no attribute '{name}'") from e
     
     def __setattr__(self, name: str, value: Any) -> None:
         self[name] = value
     
     @classmethod
-    def from_yaml(cls, path: Union[str, Path]) -> "ModelConfig":
+    def from_yaml(cls, path: str | Path) -> ModelConfig:
         """Load config from a YAML file."""
-        with open(path, "r") as f:
+        with open(path) as f:
             data = yaml.safe_load(f)
         return cls(data)
     
     @classmethod
-    def from_package(cls, package_name: str, filename: str = "config.yaml") -> "ModelConfig":
+    def from_package(cls, package_name: str, filename: str = "config.yaml") -> ModelConfig:
         """Load config from a package's bundled config.yaml."""
         package_files = files(package_name)
         config_file = package_files.joinpath(filename)

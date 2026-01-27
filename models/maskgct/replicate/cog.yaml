@@ -1,0 +1,14 @@
+# MaskGCT - Replicate/Cog configuration
+# Generated from config.yaml; system_packages and python_version come from dependencies.
+
+build:
+  python_version: "3.10"
+  system_packages:
+    - build-essential
+    - git
+    - espeak-ng
+
+  python_requirements: requirements.txt
+  gpu: true
+
+predict: "predict.py:Predictor"

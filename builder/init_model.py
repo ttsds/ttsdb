@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import argparse
-import re
 import os
+import re
 from pathlib import Path
-from typing import Optional
 
 from jinja2 import Environment, FileSystemLoader
-
 
 try:
     # When run as a module: python -m builder.init_model ...
@@ -24,10 +22,10 @@ def init_model(
     name: str,
     python_version: str = "3.10",
     torch_version: str = ">=2.0.0",
-    python_requires: Optional[str] = None,
-    python_venv: Optional[str] = None,
-    hf_repo: Optional[str] = None,
-    output_dir: Optional[Path] = None,
+    python_requires: str | None = None,
+    python_venv: str | None = None,
+    hf_repo: str | None = None,
+    output_dir: Path | None = None,
     dry_run: bool = False,
 ) -> Path:
     """Initialize a new model from templates.
@@ -104,6 +102,7 @@ def init_model(
         ("README.md.j2", "README.md"),
         (".gitignore.j2", ".gitignore"),
         ("__init__.py.j2", f"src/{names['import_name']}/__init__.py"),
+        ("vendor_init.py.j2", f"src/{names['import_name']}/_vendor/__init__.py"),
         ("conftest.py.j2", "tests/conftest.py"),
         ("test_model.py.j2", "tests/test_model.py"),
     ]
@@ -119,7 +118,7 @@ def init_model(
         print(f"  hf_repo:         {names['hf_repo']}")
         print(f"  torch_version:   {names['torch_version']}")
         print("\nFiles that would be created:")
-        for template_name, output_path in templates:
+        for _, output_path in templates:
             print(f"  {output_dir / output_path}")
         return output_dir
     
@@ -137,11 +136,11 @@ def init_model(
         print(f"Created {file_path}")
     
     print(f"\n✓ Model '{names['model_name']}' initialized at {output_dir}")
-    print(f"\nNext steps:")
+    print("\nNext steps:")
     print(f"  1. cd {output_dir}")
-    print(f"  2. Fill in the TODO fields in config.yaml")
+    print("  2. Fill in the TODO fields in config.yaml")
     print(f"  3. Implement _load_model and _synthesize in src/{names['import_name']}/__init__.py")
-    print(f"  4. uv sync")
+    print("  4. uv sync")
     
     return output_dir
 

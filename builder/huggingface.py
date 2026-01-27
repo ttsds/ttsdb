@@ -13,12 +13,11 @@ Models can have custom scripts at scripts/prepare_weights.py for special handlin
 from __future__ import annotations
 
 import argparse
-import re
+import os
+import shutil
 import subprocess
 import sys
-import os
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -26,17 +25,15 @@ from jinja2 import Environment, FileSystemLoader
 try:
     # When run as a module: python -m builder.huggingface ...
     from .languages import (  # type: ignore
-        get_language_name,
-        get_language,
         get_language_choices_for_gradio,
+        get_language_name,
     )
     from .names import normalize_name  # type: ignore
 except Exception:
     # When run as a script: python builder/huggingface.py ...
     from languages import (  # type: ignore
-        get_language_name,
-        get_language,
         get_language_choices_for_gradio,
+        get_language_name,
     )
     from names import normalize_name  # type: ignore
 
@@ -85,7 +82,7 @@ def get_huggingface_dir(model_dir: Path) -> Path:
     return model_dir / "huggingface"
 
 
-def generate_readme(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
+def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
     """Generate HuggingFace README.md from model config.
     
     Args:
@@ -160,7 +157,7 @@ def generate_readme(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
 def download_weights(
     source_url: str,
     output_dir: Path,
-    commit: Optional[str] = None,
+    commit: str | None = None,
 ) -> Path:
     """Download weights from source URL.
     
@@ -220,12 +217,16 @@ def prepare_weights(
     custom_script = model_dir / "scripts" / "prepare_weights.py"
     if custom_script.exists():
         print(f"Running custom prepare script: {custom_script}")
-        result = subprocess.run(
+        subprocess.run(
             [sys.executable, str(custom_script)],
             cwd=model_dir,
             check=True,
         )
-        print(f"✓ Custom script completed")
+        print("✓ Custom script completed")
+        # Run generic post-processing (e.g., vendor asset extraction), then stop.
+        _prepare_vendor_assets(model_dir, hf_dir, force=force)
+        print("Generating README...")
+        generate_readme(model_dir, hf_dir)
         return hf_dir
     
     # Check if weights already exist (look for actual model files, not just README)
@@ -255,12 +256,63 @@ def prepare_weights(
     print(f"Downloading weights from {source_url}...")
     download_weights(source_url, hf_dir, commit)
     
+    # Extract any large vendor assets into the weights repo
+    _prepare_vendor_assets(model_dir, hf_dir, force=force)
+
     # Generate README
     print("Generating README...")
     generate_readme(model_dir, hf_dir)
     
     print(f"✓ Weights prepared at {hf_dir}")
     return hf_dir
+
+
+def _prepare_vendor_assets(model_dir: Path, hf_dir: Path, force: bool = False) -> None:
+    """Copy configured vendor assets from upstream code repo into the HF weights folder.
+
+    This is used when upstream research repositories include large/binary assets inside
+    the code tree (e.g. ONNX models). We keep wheels lean by stripping these from vendored
+    code and uploading them alongside model weights instead.
+    """
+    config = load_config(model_dir)
+    code = config.get("code", {}) or {}
+    vendor_assets = code.get("vendor_assets", []) or []
+    if not vendor_assets:
+        return
+
+    url = code.get("url")
+    commit = code.get("commit")
+    if not url or not commit:
+        raise ValueError("code.url and code.commit are required to fetch vendor_assets")
+
+    tmp_dir = hf_dir / ".tmp_vendor_assets"
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    repo_dir = tmp_dir / "repo"
+    print(f"Fetching vendor assets from {url} @ {commit} ...")
+    subprocess.run(["git", "clone", "--depth", "1", url, str(repo_dir)], check=True)
+    subprocess.run(["git", "fetch", "--depth", "1", "origin", commit], cwd=repo_dir, check=True)
+    subprocess.run(["git", "checkout", commit], cwd=repo_dir, check=True)
+
+    for entry in vendor_assets:
+        src_rel = entry.get("source")
+        if not src_rel:
+            continue
+        dst_rel = entry.get("dest") or f"vendor_assets/{src_rel}"
+
+        src = repo_dir / src_rel
+        dst = hf_dir / dst_rel
+        if dst.exists() and not force:
+            continue
+        if not src.exists():
+            raise FileNotFoundError(f"Vendor asset not found in upstream repo: {src_rel}")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        print(f"Copied vendor asset → {dst_rel}")
+
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def upload_weights(
@@ -338,7 +390,7 @@ def get_space_dir(model_dir: Path) -> Path:
     return model_dir / "space"
 
 
-def generate_space(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
+def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     """Generate HuggingFace Space files from model config.
     
     Args:
@@ -428,11 +480,15 @@ def generate_space(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
                 "reference_text": ref_text,
             })
     
+    # System packages for apt (used by Space Dockerfile and Replicate cog.yaml)
+    system_packages = dependencies.get("system_packages") or ["build-essential", "git"]
+
     # Prepare template context
     context = {
         **names,
         "description": (metadata.get("description") or "").rstrip(),
-        "python_venv": str(dependencies.get("python_venv") or "3.10"),
+        "python_venv": str(dependencies.get("python_venv") or dependencies.get("python") or "3.10"),
+        "system_packages": system_packages,
         "hf_repo": (os.environ.get("TTSDB_HF_REPO") or "ttsds").strip(),
         "package_version": package_version,
         "weights_license": weights.get("license", "other"),
@@ -451,7 +507,7 @@ def generate_space(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
     }
     
     # Generate all space files
-    for template_name in ["app.py.j2", "requirements.txt.j2", "README.md.j2"]:
+    for template_name in ["app.py.j2", "Dockerfile.j2", "README.md.j2"]:
         template = env.get_template(template_name)
         content = template.render(**context)
         
@@ -460,6 +516,72 @@ def generate_space(model_dir: Path, output_dir: Optional[Path] = None) -> Path:
         output_path.write_text(content)
         print(f"Generated {output_path}")
     
+    return output_dir
+
+
+def _default_model_id_from_weights_url(url: str) -> str:
+    """Derive HuggingFace repo_id from weights.url (e.g. amphion/MaskGCT)."""
+    if not url or "huggingface.co/" not in url:
+        return ""
+    return url.rstrip("/").split("huggingface.co/")[-1].split("/tree/")[0].strip("/")
+
+
+def generate_replicate(model_dir: Path, output_dir: Path | None = None) -> Path:
+    """Generate Replicate/Cog files (cog.yaml, predict.py, requirements.txt).
+
+    Uses the same config-driven system_packages and python version as the Space
+    Dockerfile. predict.py is a thin wrapper around the ttsdb_<model> package.
+
+    Args:
+        model_dir: Path to the model directory containing config.yaml.
+        output_dir: Output directory. Defaults to model_dir/replicate/.
+
+    Returns:
+        Path to the output directory (model_dir/replicate/ by default).
+    """
+    config = load_config(model_dir)
+    metadata = config.get("metadata", {})
+    dependencies = config.get("dependencies", {}) or {}
+    weights = config.get("weights", {})
+    package_version = _load_pyproject_version(model_dir)
+    names = normalize_name(metadata.get("name", model_dir.name))
+    system_packages = dependencies.get("system_packages") or ["build-essential", "git"]
+    python_version = str(dependencies.get("python_venv") or dependencies.get("python") or "3.10")
+    weights_url = weights.get("url", "")
+    default_model_id = _default_model_id_from_weights_url(weights_url) or ""
+
+    if output_dir is None:
+        output_dir = Path(model_dir).resolve() / "replicate"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    repo_root = Path(__file__).parent.parent
+    templates_dir = repo_root / "templates" / "replicate"
+    env = Environment(
+        loader=FileSystemLoader(str(templates_dir)),
+        keep_trailing_newline=True,
+    )
+
+    context = {
+        **names,
+        "system_packages": system_packages,
+        "python_version": python_version,
+        "package_version": package_version,
+        "weights_url": weights_url,
+        "default_model_id": default_model_id,
+    }
+
+    for template_name, output_name in [
+        ("cog.yaml.j2", "cog.yaml"),
+        ("predict.py.j2", "predict.py"),
+        ("requirements.txt.j2", "requirements.txt"),
+    ]:
+        template = env.get_template(template_name)
+        content = template.render(**context)
+        output_path = output_dir / output_name
+        output_path.write_text(content)
+        print(f"Generated {output_path}")
+
     return output_dir
 
 
@@ -612,7 +734,7 @@ Examples:
     # space subcommand (generate space files)
     space_parser = subparsers.add_parser(
         "space", 
-        help="Generate HuggingFace Space files (app.py, requirements.txt, README.md)"
+        help="Generate HuggingFace Space files (app.py, Dockerfile, README.md)"
     )
     space_parser.add_argument("model_dir", type=Path, help="Model directory")
     space_parser.add_argument(
@@ -635,6 +757,17 @@ Examples:
         help="Show what would be done without uploading"
     )
     
+    # replicate subcommand (generate Replicate/Cog files)
+    replicate_parser = subparsers.add_parser(
+        "replicate",
+        help="Generate Replicate/Cog files (cog.yaml, predict.py, requirements.txt)",
+    )
+    replicate_parser.add_argument("model_dir", type=Path, help="Model directory")
+    replicate_parser.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="Output directory (default: <model_dir>/replicate/)",
+    )
+    
     args = parser.parse_args()
     
     if args.command == "prepare":
@@ -647,6 +780,8 @@ Examples:
         generate_space(args.model_dir, args.output)
     elif args.command == "space-upload":
         upload_space(args.model_dir, args.repo, args.dry_run)
+    elif args.command == "replicate":
+        generate_replicate(args.model_dir, args.output)
 
 
 if __name__ == "__main__":

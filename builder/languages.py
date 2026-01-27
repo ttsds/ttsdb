@@ -10,7 +10,6 @@ The full standard contains 8000+ language codes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -18,8 +17,8 @@ class Language:
     """A language with ISO 639-3 code and metadata."""
     code: str  # ISO 639-3 three-letter code
     name: str  # English name
-    native_name: Optional[str] = None  # Native name
-    iso639_1: Optional[str] = None  # ISO 639-1 two-letter code (if exists)
+    native_name: str | None = None  # Native name
+    iso639_1: str | None = None  # ISO 639-1 two-letter code (if exists)
 
 
 # Curated list of languages commonly used in TTS
@@ -87,7 +86,7 @@ _ISO639_1_TO_3: dict[str, str] = {
 }
 
 
-def get_language(code: str) -> Optional[Language]:
+def get_language(code: str) -> Language | None:
     """Get a language by ISO 639-3 or ISO 639-1 code.
     
     Args:

@@ -1,0 +1,36 @@
+# {{ model_name }} HuggingFace Space - Dockerfile
+# Uses Docker SDK for more control over dependencies and environment
+
+FROM python:{{ python_venv }}-slim
+
+# Install system dependencies (as root)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    {{ system_packages | join(" \\\n    ") }}
+
+# Set up user (UID 1000 as required by HuggingFace Spaces)
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
+WORKDIR $HOME/app
+
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install PyTorch (CPU version for Spaces - GPU available at runtime if hardware supports it)
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install the model package from PyPI
+RUN pip install --no-cache-dir {{ import_name }}=={{ package_version }}
+
+# Install Gradio
+RUN pip install --no-cache-dir gradio>=5.15.0
+
+# Copy the app
+COPY --chown=user app.py $HOME/app/
+
+# Expose port (HuggingFace Spaces will map this)
+EXPOSE 7860
+
+# Run the app
+CMD ["python", "app.py"]

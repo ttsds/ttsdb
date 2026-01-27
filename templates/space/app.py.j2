@@ -71,7 +71,9 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         # {{ model_name }} Text-to-Speech
         
 {% if description %}
+{% filter indent(width=8) %}
 {{ description }}
+{% endfilter %}
 
 {% else %}
         Clone any voice with just a few seconds of reference audio.
@@ -81,15 +83,6 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         > It is provided for research and educational purposes only.
         
         **Links:** [Code]({{ code_url }}){% for url in paper_urls %} | [Paper]({{ url }}){% endfor %}{% if weights_url %} | [Weights]({{ weights_url }}){% endif %}
-        
-        ---
-        
-        ## How to use:
-        1. Upload a reference audio clip (3-10 seconds recommended)
-        2. Enter the transcript of what's being said in the reference
-        3. Enter the text you want to synthesize
-        4. Select the language
-        5. Click "Synthesize"
         """
     )
     
@@ -147,8 +140,6 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
     # Footer with model information and citations
     gr.Markdown(
         """
-        ---
-        
         ## Model Information
         
         | Property | Value |
@@ -168,7 +159,9 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         
 {% for citation in citations %}
         ```bibtex
+{% filter indent(width=8) %}
 {{ citation.text }}
+{% endfilter %}
         ```
 {% endfor %}
 {% endif %}

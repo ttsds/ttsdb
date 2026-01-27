@@ -9,7 +9,6 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
-
 # Configuration
 SOURCE_REPO = "amphion/MaskGCT"
 SOURCE_COMMIT = "e3c5700"

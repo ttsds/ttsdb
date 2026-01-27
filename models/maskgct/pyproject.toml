@@ -1,6 +1,6 @@
 [project]
 name = "ttsdb_maskgct"
-version = "0.1.1"
+version = "0.1.5"
 description = "MaskGCT model for TTSDB"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -49,6 +49,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ttsdb_maskgct"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_maskgct/_vendor/**",
+]
 exclude = [
     # Exclude non-package directories
     "huggingface/",
@@ -87,3 +91,4 @@ exclude = [
 
 [tool.hatch.build.targets.wheel.force-include]
 "config.yaml" = "ttsdb_maskgct/config.yaml"
+"src/ttsdb_maskgct/_vendor/source" = "ttsdb_maskgct/_vendor/source"
