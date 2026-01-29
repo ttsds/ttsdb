@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
 from jinja2 import Environment, FileSystemLoader
 
 try:
@@ -99,6 +101,7 @@ def init_model(
     templates = [
         ("pyproject.toml.j2", "pyproject.toml"),
         ("config.yaml.j2", "config.yaml"),
+        ("test_data.yaml.j2", "test_data.yaml"),
         ("README.md.j2", "README.md"),
         (".gitignore.j2", ".gitignore"),
         ("__init__.py.j2", f"src/{names['import_name']}/__init__.py"),
@@ -126,9 +129,30 @@ def init_model(
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Render templates
+    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     for template_name, output_path in templates:
         template = env.get_template(template_name)
-        content = template.render(**names)
+        content = template.render(
+            **names,
+            generated_at=generated_at,
+            generated_from_template=f"templates/init/{template_name}",
+        )
+
+        # After rendering config.yaml, parse it and feed key metadata back into
+        # subsequent templates (README/test_data/etc).
+        if template_name == "config.yaml.j2":
+            try:
+                cfg = yaml.safe_load(content) or {}
+                meta = (cfg.get("metadata") or {}) if isinstance(cfg, dict) else {}
+                names["description"] = (meta.get("description") or "").rstrip()
+                langs = meta.get("languages") or []
+                if isinstance(langs, str):
+                    langs = [langs]
+                names["language_codes"] = list(langs)
+            except Exception:
+                # Best-effort: templates still render even if parsing fails.
+                names.setdefault("description", "")
+                names.setdefault("language_codes", [])
         
         file_path = output_dir / output_path
         file_path.parent.mkdir(parents=True, exist_ok=True)

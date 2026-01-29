@@ -1,85 +1,36 @@
-"""Pytest configuration for {{ model_name }} tests."""
+"""Pytest configuration for model tests (shared via ttsdb_core).
 
-import os
-import tempfile
-import urllib.request
+Generated at {{ generated_at }} from {{ generated_from_template }}.
+"""
+
+import sys
 from pathlib import Path
 
-import pytest
-import yaml
+from ttsdb_core.testing import (
+    configure_integration_marker,
+    make_audio_examples_dir_fixture,
+    make_reference_audio_fixture,
+    make_test_data_fixture,
+    make_weights_path_fixture,
+    skip_integration_by_default,
+)
+
+MODEL_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = MODEL_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 
 def pytest_configure(config):
-    """Register custom markers."""
-    config.addinivalue_line(
-        "markers",
-        "integration: mark test as integration test (requires model weights)",
-    )
+    configure_integration_marker(config)
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip integration tests by default unless -m integration is specified."""
-    if config.getoption("-m") != "integration":
-        skip_integration = pytest.mark.skip(reason="integration tests require -m integration")
-        for item in items:
-            if "integration" in item.keywords:
-                item.add_marker(skip_integration)
+    skip_integration_by_default(config, items)
 
 
-@pytest.fixture
-def weights_path():
-    """Get the path to the local weights directory.
-    
-    Uses TTSDB_WEIGHTS_PATH env var if set, otherwise defaults to huggingface/.
-    """
-    path = os.environ.get("TTSDB_WEIGHTS_PATH")
-    if path is None:
-        path = Path(__file__).parent.parent / "huggingface"
-    return Path(path)
-
-
-@pytest.fixture
-def test_data():
-    """Load test data from test_data.yaml."""
-    test_data_path = Path(__file__).parent.parent / "test_data.yaml"
-    if not test_data_path.exists():
-        pytest.skip(f"Test data not found at {test_data_path}")
-    
-    with open(test_data_path) as f:
-        return yaml.safe_load(f)
-
-
-@pytest.fixture
-def reference_audio(test_data, tmp_path):
-    """Download and provide reference audio for all languages."""
-    ref_data = test_data.get("reference_audio", {})
-    
-    result = {}
-    for lang, ref_info in ref_data.items():
-        url = ref_info.get("url")
-        if not url:
-            continue
-        
-        # Download to temp file
-        ext = url.split(".")[-1]
-        audio_path = tmp_path / f"reference_{lang}.{ext}"
-        urllib.request.urlretrieve(url, audio_path)
-        
-        result[lang] = {
-            "path": str(audio_path),
-            "text": ref_info.get("text", ""),
-            "language": lang,
-        }
-    
-    if not result:
-        pytest.skip("No reference audio found in test_data.yaml")
-    
-    return result
-
-
-@pytest.fixture
-def audio_examples_dir():
-    """Get the audio examples directory, creating it if needed."""
-    examples_dir = Path(__file__).parent.parent / "audio_examples"
-    examples_dir.mkdir(exist_ok=True)
-    return examples_dir
+# Fixtures (bound to this model's root directory)
+weights_path = make_weights_path_fixture(MODEL_ROOT, prefer_weights_dir=True)
+test_data = make_test_data_fixture(MODEL_ROOT)
+reference_audio = make_reference_audio_fixture()
+audio_examples_dir = make_audio_examples_dir_fixture(MODEL_ROOT)

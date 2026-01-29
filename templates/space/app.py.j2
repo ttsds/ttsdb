@@ -1,10 +1,11 @@
 """{{ model_name }} - HuggingFace Space Demo
 
+Generated at {{ generated_at }} from {{ generated_from_template }}.
+
 A Gradio interface for {{ model_name }} text-to-speech synthesis.
 """
 
 import os
-import tempfile
 from pathlib import Path
 
 import gradio as gr
@@ -12,18 +13,10 @@ import numpy as np
 
 from {{ import_name }} import {{ class_name }}
 
+
 # Initialize model (downloads weights on first run)
 MODEL_ID = os.environ.get("MODEL_ID", "ttsds/{{ folder_name }}")
-model = None
-
-
-def load_model():
-    """Lazy load the model."""
-    global model
-    if model is None:
-        model = {{ class_name }}(model_id=MODEL_ID)
-    return model
-
+model = {{ class_name }}(model_id=MODEL_ID)
 
 def synthesize(
     text: str,
@@ -33,35 +26,27 @@ def synthesize(
 ) -> tuple[int, np.ndarray]:
     """Synthesize speech from text.
     
-    Args:
-        text: Text to synthesize.
-        reference_audio: Path to reference audio file.
-        reference_text: Transcript of reference audio.
-        language: Language code (ISO 639-3).
-        
-    Returns:
-        Tuple of (sample_rate, audio_array).
+    Expects `reference_audio` to be a filepath (Gradio `type="filepath"`).
+    Returns (sample_rate, audio_array) as expected by Gradio.
     """
-    if not text.strip():
+    if not text or not text.strip():
         raise gr.Error("Please enter some text to synthesize.")
-    
-    if not reference_audio:
+
+    if not reference_audio or not os.path.exists(reference_audio):
         raise gr.Error("Please upload a reference audio file.")
-    
-    if not reference_text.strip():
+
+    if not reference_text or not reference_text.strip():
         raise gr.Error("Please enter the transcript of the reference audio.")
-    
-    m = load_model()
-    
-    audio, sr = m.synthesize(
+
+    audio, sr = model.synthesize(
         text=text,
         reference_audio=reference_audio,
         text_reference=reference_text,
         language=language,
     )
-    
     return (sr, audio)
 
+gr.set_static_paths(paths=["examples"])
 
 # Build the Gradio interface
 with gr.Blocks(title="{{ model_name }} TTS") as demo:
@@ -120,14 +105,19 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
             )
     
     # Example inputs from test_data.yaml
-    gr.Examples(
-        examples=[
+    # Assume packaged example audios live under the repository `examples/` folder.
+    _runtime_examples = []
 {% for example in examples %}
 {% if example.reference_audio %}
-            ["{{ example.reference_audio }}", "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}"],
+    _rel = Path("{{ example.reference_audio }}")
+    _src = Path(__file__).parent / _rel
+    if _src.exists():
+        _runtime_examples.append([_src, "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}"])
 {% endif %}
 {% endfor %}
-        ],
+
+    gr.Examples(
+        examples=_runtime_examples,
         inputs=[reference_audio, reference_text, text_input, language],
     )
     
@@ -147,8 +137,7 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         | **Architecture** | {{ architecture | join(", ") }} |
         | **Sample Rate** | {{ sample_rate }} Hz |
         | **Parameters** | {{ num_parameters }}M |
-        | **Languages** | {{ language_names | join(", ") }} |
-{% if release_date %}
+        | **Languages** | {{ language_names | join(", ") }} |{% if release_date %}
         | **Release Date** | {{ release_date }} |
 {% endif %}
         
@@ -172,4 +161,4 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
 if __name__ == "__main__":
     # HuggingFace Spaces exposes the service via $PORT and requires binding to 0.0.0.0
     port = int(os.environ.get("PORT", "7860"))
-    demo.launch(server_name="0.0.0.0", server_port=port, share=False)
+    demo.launch(server_name="0.0.0.0", server_port=port, share=False, allowed_paths=["examples"])

@@ -1,3 +1,5 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+
 [project]
 name = "{{ import_name }}"
 version = "0.1.0"
@@ -5,7 +7,7 @@ description = "{{ model_name }} model for TTSDB"
 readme = "README.md"
 requires-python = "{{ python_requires }}"
 dependencies = [
-    "ttsdb-core>=0.1.0",
+    "ttsdb-core>=0.1.2",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +25,7 @@ include = [
 ]
 exclude = [
     # Exclude non-package directories
-    "huggingface/",
+    "weights/",
     "audio_examples/",
     "space/",
     "tests/",
@@ -40,7 +42,7 @@ exclude = [
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-    "huggingface/",
+    "weights/",
     "audio_examples/",
     "space/",
     ".venv/",

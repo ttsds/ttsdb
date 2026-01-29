@@ -21,7 +21,9 @@ metadata:
     - Codec
   sample_rate: 24000
   architecture:
-    - Non-Autoregressive Masked Transformer
+    - Non-Autoregressive
+    - Masked
+    - Transformer
 dependencies:
   python: "3.10"
   torch: ">=2.0.0"
@@ -74,5 +76,3 @@ api:
     language: language
     speaker_reference: speaker_reference
     text_reference: text_reference
-  providers:
-    - replicate

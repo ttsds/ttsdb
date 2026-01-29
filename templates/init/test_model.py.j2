@@ -1,116 +1,25 @@
-"""Tests for {{ model_name }}."""
+"""Tests for {{ model_name }}.
+
+Generated at {{ generated_at }} from {{ generated_from_template }}.
+"""
 
 import pytest
-from ttsdb_core import ModelConfig
+from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseModelIntegrationTests
 
 
-class TestConfig:
-    """Test config loading."""
-    
-    def test_config_loads_from_package(self):
-        """Config should load from the package."""
-        config = ModelConfig.from_package("{{ import_name }}")
-        assert config is not None
-    
-    def test_config_has_metadata(self):
-        """Config should have metadata section."""
-        config = ModelConfig.from_package("{{ import_name }}")
-        assert "metadata" in config
-        assert config.metadata.name == "{{ model_name }}"
-    
-    def test_config_has_sample_rate(self):
-        """Config should specify sample rate."""
-        config = ModelConfig.from_package("{{ import_name }}")
-        assert config.metadata.sample_rate > 0
+class TestConfig(BaseModelConfigTests):
+    PACKAGE_NAME = "{{ import_name }}"
+    EXPECTED_MODEL_NAME = "{{ model_name }}"
 
 
-class TestModelImport:
-    """Test model class imports."""
-    
-    def test_model_class_importable(self):
-        """Model class should be importable."""
-        from {{ import_name }} import {{ class_name }}
-        assert {{ class_name }} is not None
-    
-    def test_model_has_package_name(self):
-        """Model should have _package_name set."""
-        from {{ import_name }} import {{ class_name }}
-        assert {{ class_name }}._package_name == "{{ import_name }}"
+class TestModelImport(BaseModelImportTests):
+    PACKAGE_NAME = "{{ import_name }}"
+    MODEL_CLASS_PATH = "{{ import_name }}.{{ class_name }}"
 
 
 # Integration tests - require model weights to be downloaded
 @pytest.mark.integration
-class TestModelIntegration:
-    """Integration tests for {{ model_name }} synthesis.
-    
-    These tests require:
-    - Model weights to be downloaded (run: just hf-weights-prepare {{ folder_name }})
-    
-    Run with: just test-integration {{ folder_name }}
-    """
-    
-    @pytest.fixture
-    def model(self, weights_path):
-        """Load the {{ model_name }} model from local weights directory."""
-        from {{ import_name }} import {{ class_name }}
-        
-        if not weights_path.exists():
-            pytest.skip(f"Weights not found at {weights_path}. Run: just hf-weights-prepare {{ folder_name }}")
-        
-        return {{ class_name }}(model_path=str(weights_path))
-    
-    def test_model_loads(self, model):
-        """Model should load successfully."""
-        assert model is not None
-        assert model.model is not None
-    
-    def test_synthesize_returns_audio(self, model, reference_audio, test_data):
-        """Synthesis should return audio array and sample rate."""
-        sentences = test_data.get("test_sentences", {}).get("eng", [])
-        if not sentences:
-            pytest.skip("No English test sentences found")
-        
-        ref = reference_audio.get("eng")
-        if not ref:
-            pytest.skip("No English reference audio found")
-        
-        text = sentences[0]["text"]
-        audio, sr = model.synthesize(
-            text=text,
-            reference_audio=ref["path"],
-            text_reference=ref["text"],
-            language="eng",
-        )
-        
-        assert audio is not None
-        assert len(audio) > 0
-        assert sr > 0
-    
-    def test_generate_audio_examples(self, model, reference_audio, test_data, audio_examples_dir):
-        """Generate audio examples for all languages and save to audio_examples/ directory."""
-        import soundfile as sf
-        
-        all_sentences = test_data.get("test_sentences", {})
-        
-        for lang, sentences in all_sentences.items():
-            ref = reference_audio.get(lang)
-            if not ref:
-                print(f"Skipping {lang}: no reference audio")
-                continue
-            
-            for i, sentence in enumerate(sentences):
-                text = sentence["text"]
-                audio, sr = model.synthesize(
-                    text=text,
-                    reference_audio=ref["path"],
-                    text_reference=ref["text"],
-                    language=lang,
-                )
-                
-                # Save the audio
-                output_path = audio_examples_dir / f"{lang}_test_{i+1:03d}.wav"
-                sf.write(str(output_path), audio, sr)
-                print(f"Saved: {output_path}")
-                
-                assert output_path.exists()
-                assert output_path.stat().st_size > 0
+class TestModelIntegration(BaseModelIntegrationTests):
+    PACKAGE_NAME = "{{ import_name }}"
+    MODEL_CLASS_PATH = "{{ import_name }}.{{ class_name }}"
+    WEIGHTS_PREPARE_HINT = "{{ folder_name }}"

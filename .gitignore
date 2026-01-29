@@ -10,7 +10,7 @@ __pycache__/
 
 
 # Generated HuggingFace assets
-models/**/huggingface/
+models/**/weights/
 models/**/space/
 
 # Environment variables

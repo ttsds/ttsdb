@@ -3,55 +3,29 @@
 import os
 
 import pytest
-from ttsdb_core import ModelConfig, get_vendor_path, vendor_context
+from ttsdb_core.vendor import get_vendor_path, vendor_context
+from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseModelIntegrationTests
 
 
-class TestConfig:
-    """Test config loading."""
-    
-    def test_config_loads_from_package(self):
-        """Config should load from the package."""
-        config = ModelConfig.from_package("ttsdb_maskgct")
-        assert config is not None
-    
-    def test_config_has_metadata(self):
-        """Config should have metadata section."""
-        config = ModelConfig.from_package("ttsdb_maskgct")
-        assert "metadata" in config
-        assert config.metadata.name == "MaskGCT"
-    
-    def test_config_has_sample_rate(self):
-        """Config should specify sample rate."""
-        config = ModelConfig.from_package("ttsdb_maskgct")
-        assert config.metadata.sample_rate == 24000
-    
-    def test_config_has_code_root(self):
-        """Config should specify code root for vendor path."""
-        config = ModelConfig.from_package("ttsdb_maskgct")
-        assert config.code.root == "."
+class TestConfig(BaseModelConfigTests):
+    PACKAGE_NAME = "ttsdb_maskgct"
+    EXPECTED_MODEL_NAME = "MaskGCT"
+    EXPECTED_SAMPLE_RATE = 24000
+    EXPECTED_CODE_ROOT = "."
 
 
-class TestModelImport:
-    """Test model class imports."""
-    
-    def test_model_class_importable(self):
-        """Model class should be importable."""
-        from ttsdb_maskgct import MaskGCT
-        assert MaskGCT is not None
-    
-    def test_model_has_package_name(self):
-        """Model should have _package_name set."""
-        from ttsdb_maskgct import MaskGCT
-        assert MaskGCT._package_name == "ttsdb_maskgct"
-    
-    def test_model_has_sample_rate(self):
-        """Model should have SAMPLE_RATE constant."""
-        from ttsdb_maskgct import MaskGCT
-        assert MaskGCT.SAMPLE_RATE == 24000
-    
+class TestModelImport(BaseModelImportTests):
+    PACKAGE_NAME = "ttsdb_maskgct"
+    MODEL_CLASS_PATH = "ttsdb_maskgct.MaskGCT"
+    EXPECTED_SAMPLE_RATE_CONST = 24000
+
+
+class TestMaskGCTSpecificImports:
+    """MaskGCT-only import tests (non-generic)."""
+
     def test_maskgct_models_container_importable(self):
-        """MaskGCTModels container should be importable."""
         from ttsdb_maskgct import MaskGCTModels
+
         assert MaskGCTModels is not None
 
 
@@ -166,8 +140,11 @@ class TestVendorContext:
         original_cwd = os.getcwd()
         
         # Use a directory we know exists
+        vendor_path = get_vendor_path("ttsdb_maskgct")
+        if not vendor_path.exists():
+            pytest.skip("Vendored code not present; run: just fetch maskgct")
+
         with vendor_context("ttsdb_maskgct", cwd=True, env=None):
-            # cwd might change (or fail if vendor not set up)
             pass
         
         # Should be restored
@@ -212,98 +189,17 @@ class TestVendorContext:
 
 # Integration tests - require model weights and Amphion to be installed
 @pytest.mark.integration
-class TestModelIntegration:
-    """Integration tests for MaskGCT synthesis.
-    
-    These tests require:
-    - Amphion to be vendored in _vendor/source/Amphion
-    - Model weights to be downloaded (run: just hf-weights-prepare maskgct)
-    
-    Run with: just test-integration maskgct
-    """
-    
-    @pytest.fixture
-    def model(self, weights_path):
-        """Load the MaskGCT model from local weights directory."""
-        from ttsdb_maskgct import MaskGCT
-        
-        if not weights_path.exists():
-            pytest.skip(f"Weights not found at {weights_path}. Run: just hf-weights-prepare maskgct")
-        
-        return MaskGCT(model_path=str(weights_path))
-    
-    def test_model_loads(self, model):
-        """Model should load successfully."""
-        assert model is not None
-        assert model.model is not None
-    
-    def test_synthesize_returns_audio(self, model, reference_audio, test_data):
-        """Synthesis should return audio array and sample rate."""
-        sentences = test_data.get("test_sentences", {}).get("eng", [])
-        if not sentences:
-            pytest.skip("No English test sentences found")
-        
-        ref = reference_audio.get("eng")
-        if not ref:
-            pytest.skip("No English reference audio found")
-        
-        text = sentences[0]["text"]
-        audio, sr = model.synthesize(
-            text=text,
-            reference_audio=ref["path"],
-            text_reference=ref["text"],
-            language="eng",
-        )
-        
-        assert audio is not None
-        assert len(audio) > 0
-        assert sr == 24000
-    
-    def test_synthesize_with_different_languages(self, model, reference_audio, test_data):
+class TestModelIntegration(BaseModelIntegrationTests):
+    PACKAGE_NAME = "ttsdb_maskgct"
+    MODEL_CLASS_PATH = "ttsdb_maskgct.MaskGCT"
+    WEIGHTS_PREPARE_HINT = "maskgct"
+    EXPECTED_SAMPLE_RATE = 24000
+
+    def test_synthesize_with_different_languages(self, synthesis_results):
         """Synthesis should work with different language codes."""
         for lang in ["eng", "zho"]:
-            ref = reference_audio.get(lang)
-            if not ref:
-                print(f"Skipping {lang}: no reference audio")
+            if (lang, 0) not in synthesis_results:
                 continue
-            
-            sentences = test_data.get("test_sentences", {}).get(lang, [])
-            text = sentences[0]["text"] if sentences else "Test text"
-            
-            audio, sr = model.synthesize(
-                text=text,
-                reference_audio=ref["path"],
-                text_reference=ref["text"],
-                language=lang,
-            )
+            audio, sr = synthesis_results[(lang, 0)]
             assert audio is not None
             assert sr == 24000
-    
-    def test_generate_audio_examples(self, model, reference_audio, test_data, audio_examples_dir):
-        """Generate audio examples for all languages and save to audio_examples/ directory."""
-        import soundfile as sf
-        
-        all_sentences = test_data.get("test_sentences", {})
-        
-        for lang, sentences in all_sentences.items():
-            ref = reference_audio.get(lang)
-            if not ref:
-                print(f"Skipping {lang}: no reference audio")
-                continue
-            
-            for i, sentence in enumerate(sentences):
-                text = sentence["text"]
-                audio, sr = model.synthesize(
-                    text=text,
-                    reference_audio=ref["path"],
-                    text_reference=ref["text"],
-                    language=lang,
-                )
-                
-                # Save the audio
-                output_path = audio_examples_dir / f"{lang}_test_{i+1:03d}.wav"
-                sf.write(str(output_path), audio, sr)
-                print(f"Saved: {output_path}")
-                
-                assert output_path.exists()
-                assert output_path.stat().st_size > 0

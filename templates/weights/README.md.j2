@@ -1,4 +1,5 @@
 ---
+# Generated at {{ generated_at }} from {{ generated_from_template }}
 license: {{ weights_license }}
 language:
 {%- for lang in language_codes %}
@@ -10,7 +11,10 @@ tags:
   - speech-synthesis
   - voice-cloning
 library_name: ttsdb
-pipeline_tag: text-to-speech
+pipeline_tag: text-to-speech{% if base_model %}
+base_model:
+  - {{ base_model }}
+{% endif %}
 ---
 
 # {{ model_name }}
@@ -56,7 +60,7 @@ pip install ttsdb-{{ package_name }}
 from {{ import_name }} import {{ class_name }}
 
 # Load the model (downloads weights automatically)
-model = {{ class_name }}(model_id="ttsds/{{ model_name }}")
+model = {{ class_name }}(model_id="ttsds/{{ folder_name }}")
 
 # Synthesize speech
 audio, sample_rate = model.synthesize(
@@ -66,7 +70,7 @@ audio, sample_rate = model.synthesize(
     text_reference="Transcript of the reference audio.",
 {%- endif %}
 {%- if has_language %}
-    language="en",
+    language="{{ language_codes[0] if language_codes else 'eng' }}",
 {%- endif %}
 )
 

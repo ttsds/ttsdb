@@ -1,0 +1,81 @@
+# Generated at 2026-01-29T19:21:50Z from templates/init/config.yaml.j2
+
+metadata:
+  name: "TorToise"
+  id: "tortoise"
+  description: |
+    Tortoise TTS voice cloning model.
+
+  training_data:
+    - id: "LibriTTS"
+      name: "LibriTTS"
+      url: "https://www.openslr.org/60/"
+      hours: 0
+    - id: "HifiTTS"
+      name: "HifiTTS"
+      url: ""
+      hours: 0
+  # Use ISO 639-3 codes for consistency with other models.
+  languages:
+    - eng
+  num_parameters: 960
+  release_date: 2022-05-17
+  target_representation:
+    - Mel
+  # Tortoise returns 24kHz audio in the Cog predictor.
+  sample_rate: 24000
+  architecture:
+    - Autoregressive
+    - Diffusion
+    - Language Modeling
+
+dependencies:
+  python: ">=3.10,<3.12"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+
+code:
+  url: https://github.com/neonbjb/tortoise-tts.git
+  commit: 8a2563ecabe93c4fb626f876dd0c52c966edef2f
+  root: .
+  license: apache-2.0
+
+weights:
+  # Official model weights live under `.models/` in this repo.
+  url: https://huggingface.co/jbetker/tortoise-tts-v2
+  commit:
+  license: other
+
+external:
+  citations:
+    - id: betker2023betterspeechsynthesisscaling
+      text: >
+        @misc{betker2023betterspeechsynthesisscaling,
+          title={Better speech synthesis through scaling},
+          author={James Betker},
+          year={2023},
+          eprint={2305.07243},
+          archivePrefix={arXiv},
+          primaryClass={cs.SD},
+          url={https://arxiv.org/abs/2305.07243},
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2305.07243
+
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: null
+    language: null

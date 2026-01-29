@@ -15,7 +15,7 @@ SOURCE_COMMIT = "e3c5700"
 
 # Paths (relative to model directory)
 MODEL_DIR = Path(__file__).parent.parent
-HF_DIR = MODEL_DIR / "huggingface"
+HF_DIR = MODEL_DIR / "weights"
 
 
 def main():

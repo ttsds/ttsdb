@@ -44,11 +44,8 @@ setup model device="cpu" torch_version="" python="":
     PYTHON_VERSION=${PYTHON_VERSION:-"{{default_python}}"}
     echo "Setting up {{model}} with Python ${PYTHON_VERSION} ({{device}})..."
     
-    # Fetch vendor code if config has code.url
-    if grep -q "code:" config.yaml && grep -q "url:" config.yaml 2>/dev/null; then
-        echo "Fetching vendor code..."
-        python ../../builder/vendor.py .
-    fi
+    # Fetch vendor code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
+    python ../../builder/vendor.py .
     
     # Create venv with specified Python version (--clear to replace existing)
     echo "Creating venv with Python ${PYTHON_VERSION}..."
@@ -86,11 +83,11 @@ setup model device="cpu" torch_version="" python="":
 
 # Run unit tests for a model
 test model:
-    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v
+    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -rs
 
 # Run integration tests for a model (requires weights: just hf-weights-prepare <model>)
 test-integration model:
-    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -m integration
+    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -rs -m integration
 
 # Build a specific model
 build model:
@@ -205,11 +202,8 @@ pypi-build model:
     echo "Building {{model}} package..."
     cd "models/{{model}}"
     rm -rf dist/
-    # Ensure vendored research code is present in the wheel when needed
-    if grep -q "^code:" config.yaml && grep -q "url:" config.yaml 2>/dev/null; then
-        echo "Vendoring upstream code..."
-        python ../../builder/vendor.py .
-    fi
+    # Vendor upstream code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
+    python ../../builder/vendor.py .
     # Build wheel only; building sdists can omit vendored code depending on source filtering.
     uv build --wheel --no-sources --verbose
 

@@ -77,6 +77,13 @@ def fetch_source(
     with open(config_path) as f:
         config = yaml.safe_load(f)
     
+    # PyPI-only packages do not vendor upstream code
+    pypi_config = config.get("package", {}).get("pypi")
+    if pypi_config:
+        pypi_name = pypi_config if isinstance(pypi_config, str) else pypi_config.get("name", "")
+        print(f"Package is PyPI-only (package.pypi.name={pypi_name}); skipping vendor.")
+        return None
+    
     # Check for code section with URL
     code = config.get("code", {})
     url = code.get("url")

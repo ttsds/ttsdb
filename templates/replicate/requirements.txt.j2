@@ -1,6 +1,9 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+#
 # {{ model_name }} - Replicate/Cog Python dependencies
-# Generated from config; installs the published {{ import_name }} package.
+# Generated from config; installs the external PyPI package and the ttsdb wrapper.
 torch
 torchaudio
 soundfile
-{{ import_name }}=={{ package_version }}
+{% if has_external_pypi %}{{ pypi_package_name }}=={{ pypi_package_version }}
+{% endif %}{{ import_name }}=={{ package_version }}

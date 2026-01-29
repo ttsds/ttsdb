@@ -7,7 +7,13 @@ import numpy as np
 import soundfile as sf
 import torch
 from scipy import signal
-from transformers import AutoProcessor, AutoTokenizer
+try:
+    # Optional helpers. Some environments may have an older `transformers`
+    # version installed; keep core importable even if these names don't exist.
+    from transformers import AutoProcessor, AutoTokenizer
+except Exception:  # pragma: no cover
+    AutoProcessor = None  # type: ignore[assignment]
+    AutoTokenizer = None  # type: ignore[assignment]
 
 from .config import ModelConfig
 from .vendor import get_vendor_path, setup_vendor_path, vendor_context
@@ -100,31 +106,56 @@ class VoiceCloningTTSBase(ABC):
         
         # Load model (implemented by subclasses)
         self.model = self._load_model(load_path)
-        self.model.to(self.device)
-        self.model.eval()
+        for m in self._iter_torch_modules():
+            # Only torch modules are moved/eval'ed. This allows wrappers that return
+            # non-Module objects (e.g. service objects) while still supporting
+            # multi-module models (e.g. model + vocoder).
+            m.to(self.device)
+            m.eval()
         
         # Try to load tokenizer and processor if they exist (optional helpers)
-        try:
-            self.tokenizer = AutoTokenizer.from_pretrained(load_path)
-        except (OSError, ValueError, TypeError):
+        if AutoTokenizer is not None:
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(load_path)
+            except (OSError, ValueError, TypeError):
+                self.tokenizer = None
+        else:
             self.tokenizer = None
-        
-        try:
-            self.processor = AutoProcessor.from_pretrained(load_path)
-        except (OSError, ValueError, TypeError):
+
+        if AutoProcessor is not None:
+            try:
+                self.processor = AutoProcessor.from_pretrained(load_path)
+            except (OSError, ValueError, TypeError):
+                self.processor = None
+        else:
             self.processor = None
     
     @abstractmethod
-    def _load_model(self, load_path: str) -> torch.nn.Module:
+    def _load_model(self, load_path: str):
         """Load the model architecture and weights.
         
         Args:
             load_path: Path to model (local or HuggingFace ID).
             
         Returns:
-            Loaded PyTorch model.
+            A loaded model object. Typically a `torch.nn.Module`, but wrappers may
+            return other objects (e.g. a container/service) as long as they also
+            override `_iter_torch_modules()` to expose any underlying torch modules.
         """
         pass
+
+    def _iter_torch_modules(self) -> list[torch.nn.Module]:
+        """Return all torch modules that should follow `.to()/.eval()/.train()`.
+
+        Default: only `self.model` if it is a `torch.nn.Module`.
+        Subclasses can override to include e.g. vocoders, tokenizers with torch
+        weights, or other auxiliary modules.
+        """
+
+        modules: list[torch.nn.Module] = []
+        if isinstance(self.model, torch.nn.Module):
+            modules.append(self.model)
+        return modules
     
     @abstractmethod
     def _synthesize(
@@ -341,20 +372,20 @@ class VoiceCloningTTSBase(ABC):
             device: Target device.
         """
         self.device = torch.device(device)
-        if self.model is not None:
-            self.model.to(self.device)
+        for m in self._iter_torch_modules():
+            m.to(self.device)
         return self
     
     def eval(self):
         """Set model to evaluation mode."""
-        if self.model is not None:
-            self.model.eval()
+        for m in self._iter_torch_modules():
+            m.eval()
         return self
     
     def train(self):
         """Set model to training mode."""
-        if self.model is not None:
-            self.model.train()
+        for m in self._iter_torch_modules():
+            m.train()
         return self
     
     def __call__(

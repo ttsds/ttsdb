@@ -2,11 +2,11 @@
 """Generate HuggingFace model card and upload weights.
 
 Workflow:
-  1. `prepare` - Downloads weights to models/<model>/huggingface/ (or runs model-specific script)
-  2. `readme`  - Generates README.md in models/<model>/huggingface/
-  3. `upload`  - Uploads the local huggingface/ directory to HuggingFace
+  1. `prepare` - Downloads weights to models/<model>/weights/ (or runs model-specific script)
+  2. `readme`  - Generates README.md in models/<model>/weights/
+  3. `upload`  - Uploads the local weights/ directory to HuggingFace
 
-The huggingface/ directory is git-ignored and stores the full repo locally for testing.
+The weights/ directory is git-ignored and stores the full repo locally for testing.
 Models can have custom scripts at scripts/prepare_weights.py for special handling.
 """
 
@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -78,8 +79,8 @@ def _load_pyproject_version(model_dir: Path) -> str:
 
 
 def get_huggingface_dir(model_dir: Path) -> Path:
-    """Get the local huggingface directory for a model."""
-    return model_dir / "huggingface"
+    """Get the local weights directory for a model."""
+    return model_dir / "weights"
 
 
 def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
@@ -87,7 +88,7 @@ def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
     
     Args:
         model_dir: Path to the model directory containing config.yaml.
-        output_dir: Output directory for README.md. Defaults to model_dir/huggingface/.
+        output_dir: Output directory for README.md. Defaults to model_dir/weights/.
         
     Returns:
         Path to the generated README.md.
@@ -99,6 +100,10 @@ def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
     external = config.get("external", {})
     api = config.get("api", {})
     api_params = api.get("parameters", {})
+    base_model = config.get("weights", {}).get("url", [])
+
+    if base_model and "huggingface.co" in base_model:
+        base_model = base_model.replace("https://huggingface.co/", "")
     
     # Get name variants
     names = normalize_name(metadata.get("name", model_dir.name))
@@ -129,6 +134,9 @@ def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
         "code_license": code.get("license", "other"),
         "code_license_name": LICENSE_NAMES.get(code.get("license", "other"), "Other"),
         "weights_url": weights.get("url", ""),
+        # Used for HF model card metadata (front matter). For these mirrors, the
+        # upstream weights repo is the most useful `base_model`.
+        "base_model": base_model or "",
         "code_url": code.get("url", ""),
         "language_codes": language_codes,
         "language_names": language_names,
@@ -144,8 +152,13 @@ def generate_readme(model_dir: Path, output_dir: Path | None = None) -> Path:
     }
     
     # Render README
+    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     template = env.get_template("README.md.j2")
-    readme_content = template.render(**context)
+    readme_content = template.render(
+        **context,
+        generated_at=generated_at,
+        generated_from_template="templates/weights/README.md.j2",
+    )
     
     readme_path = output_dir / "README.md"
     readme_path.write_text(readme_content)
@@ -200,7 +213,7 @@ def prepare_weights(
 ) -> Path:
     """Prepare weights for a model by downloading or running model-specific script.
     
-    This downloads weights to the local huggingface/ directory for testing and upload.
+    This downloads weights to the local weights/ directory for testing and upload.
     If a model-specific script exists at scripts/prepare_weights.py, it will be run instead.
     
     Args:
@@ -208,7 +221,7 @@ def prepare_weights(
         force: If True, re-download even if weights already exist.
         
     Returns:
-        Path to the prepared huggingface directory.
+        Path to the prepared weights directory.
     """
     model_dir = Path(model_dir).resolve()
     hf_dir = get_huggingface_dir(model_dir)
@@ -273,8 +286,12 @@ def _prepare_vendor_assets(model_dir: Path, hf_dir: Path, force: bool = False) -
     This is used when upstream research repositories include large/binary assets inside
     the code tree (e.g. ONNX models). We keep wheels lean by stripping these from vendored
     code and uploading them alongside model weights instead.
+    Skipped when package.pypi is set (PyPI-only distribution, no vendored code).
     """
     config = load_config(model_dir)
+    pypi_config = config.get("package", {}).get("pypi")
+    if pypi_config:
+        return
     code = config.get("code", {}) or {}
     vendor_assets = code.get("vendor_assets", []) or []
     if not vendor_assets:
@@ -320,7 +337,7 @@ def upload_weights(
     repo_id: str = "ttsds",
     dry_run: bool = False,
 ) -> str:
-    """Upload model weights to HuggingFace from local huggingface/ directory.
+    """Upload model weights to HuggingFace from local weights/ directory.
     
     Args:
         model_dir: Path to model directory with config.yaml.
@@ -483,6 +500,17 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     # System packages for apt (used by Space Dockerfile and Replicate cog.yaml)
     system_packages = dependencies.get("system_packages") or ["build-essential", "git"]
 
+    # Get PyPI package name/version if specified (for PyPI-only packages)
+    package_config = config.get("package", {})
+    pypi_config = package_config.get("pypi")
+    has_external_pypi = pypi_config and isinstance(pypi_config, dict)
+    if has_external_pypi:
+        pypi_package_name = pypi_config.get("name", names["import_name"])
+        pypi_package_version = pypi_config.get("version", package_version)
+    else:
+        pypi_package_name = names["import_name"]
+        pypi_package_version = package_version
+
     # Prepare template context
     context = {
         **names,
@@ -491,6 +519,9 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
         "system_packages": system_packages,
         "hf_repo": (os.environ.get("TTSDB_HF_REPO") or "ttsds").strip(),
         "package_version": package_version,
+        "pypi_package_name": pypi_package_name,
+        "pypi_package_version": pypi_package_version,
+        "has_external_pypi": has_external_pypi,
         "weights_license": weights.get("license", "other"),
         "weights_url": weights.get("url", ""),
         "code_url": code.get("url", ""),
@@ -507,9 +538,14 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     }
     
     # Generate all space files
+    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     for template_name in ["app.py.j2", "Dockerfile.j2", "README.md.j2"]:
         template = env.get_template(template_name)
-        content = template.render(**context)
+        content = template.render(
+            **context,
+            generated_at=generated_at,
+            generated_from_template=f"templates/space/{template_name}",
+        )
         
         output_name = template_name.replace(".j2", "")
         output_path = output_dir / output_name
@@ -550,6 +586,17 @@ def generate_replicate(model_dir: Path, output_dir: Path | None = None) -> Path:
     weights_url = weights.get("url", "")
     default_model_id = _default_model_id_from_weights_url(weights_url) or ""
 
+    # Get PyPI package name/version if specified (for PyPI-only packages)
+    package_config = config.get("package", {})
+    pypi_config = package_config.get("pypi")
+    has_external_pypi = pypi_config and isinstance(pypi_config, dict)
+    if has_external_pypi:
+        pypi_package_name = pypi_config.get("name", names["import_name"])
+        pypi_package_version = pypi_config.get("version", package_version)
+    else:
+        pypi_package_name = names["import_name"]
+        pypi_package_version = package_version
+
     if output_dir is None:
         output_dir = Path(model_dir).resolve() / "replicate"
     output_dir = Path(output_dir)
@@ -567,17 +614,25 @@ def generate_replicate(model_dir: Path, output_dir: Path | None = None) -> Path:
         "system_packages": system_packages,
         "python_version": python_version,
         "package_version": package_version,
+        "pypi_package_name": pypi_package_name,
+        "pypi_package_version": pypi_package_version,
+        "has_external_pypi": has_external_pypi,
         "weights_url": weights_url,
         "default_model_id": default_model_id,
     }
 
+    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     for template_name, output_name in [
         ("cog.yaml.j2", "cog.yaml"),
         ("predict.py.j2", "predict.py"),
         ("requirements.txt.j2", "requirements.txt"),
     ]:
         template = env.get_template(template_name)
-        content = template.render(**context)
+        content = template.render(
+            **context,
+            generated_at=generated_at,
+            generated_from_template=f"templates/replicate/{template_name}",
+        )
         output_path = output_dir / output_name
         output_path.write_text(content)
         print(f"Generated {output_path}")
@@ -633,7 +688,39 @@ def upload_space(
     
     # Create space repo if it doesn't exist
     api.create_repo(repo_id=repo_id, repo_type="space", space_sdk="gradio", exist_ok=True)
-    
+    # Add HF_TOKEN as a space secret if available in environment or .env
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        repo_root = Path(__file__).parent.parent
+        env_path = repo_root / ".env"
+        if env_path.exists():
+            for line in env_path.read_text().splitlines():
+                if not line or line.strip().startswith("#"):
+                    continue
+                if line.strip().startswith("HF_TOKEN="):
+                    token = line.split("=", 1)[1].strip()
+                    break
+
+    if token:
+        try:
+            if hasattr(api, "add_space_secret"):
+                func = getattr(api, "add_space_secret")
+                # Try common invocation patterns to support different huggingface_hub versions
+                try:
+                    func(repo_id, "HF_TOKEN", token)
+                except TypeError:
+                    try:
+                        func(repo_id=repo_id, name="HF_TOKEN", value=token)
+                    except TypeError:
+                        try:
+                            func(space=repo_id, name="HF_TOKEN", value=token)
+                        except Exception as e:
+                            print(f"Warning: failed to add space secret (unexpected signature): {e}")
+            else:
+                print("Warning: huggingface_hub HfApi has no add_space_secret; skipping secret upload")
+        except Exception as e:
+            print(f"Warning: failed to add space secret: {e}")
+
     api.upload_folder(
         folder_path=str(space_dir),
         repo_id=repo_id,
@@ -661,7 +748,7 @@ Workflow:
   3. Upload to HuggingFace:
      %(prog)s upload models/maskgct
 
-The weights are stored in models/<model>/huggingface/ which is git-ignored.
+    The weights are stored in models/<model>/weights/ which is git-ignored.
 This allows local testing without re-downloading from HuggingFace.
 
 Custom Scripts:
@@ -703,7 +790,7 @@ Examples:
     # prepare subcommand
     prepare_parser = subparsers.add_parser(
         "prepare", 
-        help="Download/prepare weights to local huggingface/ directory"
+        help="Download/prepare weights to local weights/ directory"
     )
     prepare_parser.add_argument("model_dir", type=Path, help="Model directory")
     prepare_parser.add_argument(
@@ -716,7 +803,7 @@ Examples:
     readme_parser.add_argument("model_dir", type=Path, help="Model directory")
     readme_parser.add_argument(
         "--output", "-o", type=Path, default=None,
-        help="Output directory (default: <model_dir>/huggingface/)"
+        help="Output directory (default: <model_dir>/weights/)"
     )
     
     # upload subcommand

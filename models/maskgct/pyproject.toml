@@ -5,7 +5,7 @@ description = "MaskGCT model for TTSDB"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "ttsdb-core>=0.1.0",
+    "ttsdb-core>=0.1.2",
     # PyTorch ecosystem
     "torch>=2.0.0",
     "torchaudio>=2.0.0",
@@ -55,7 +55,7 @@ include = [
 ]
 exclude = [
     # Exclude non-package directories
-    "huggingface/",
+    "weights/",
     "audio_examples/",
     "space/",
     "tests/",
@@ -72,7 +72,7 @@ exclude = [
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-    "huggingface/",
+    "weights/",
     "audio_examples/",
     "space/",
     ".venv/",

@@ -1,3 +1,5 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+#
 # {{ model_name }} HuggingFace Space - Dockerfile
 # Uses Docker SDK for more control over dependencies and environment
 
@@ -20,14 +22,17 @@ RUN pip install --no-cache-dir --upgrade pip
 # Install PyTorch (CPU version for Spaces - GPU available at runtime if hardware supports it)
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# Install the model package from PyPI
-RUN pip install --no-cache-dir {{ import_name }}=={{ package_version }}
+# Install the external PyPI package (if specified) and the ttsdb wrapper from PyPI
+{% if has_external_pypi %}RUN pip install --no-cache-dir {{ pypi_package_name }}=={{ pypi_package_version }}
+{% endif %}RUN pip install --no-cache-dir {{ import_name }}=={{ package_version }}
 
 # Install Gradio
 RUN pip install --no-cache-dir gradio>=5.15.0
 
 # Copy the app
 COPY --chown=user app.py $HOME/app/
+# Copy packaged audio examples into the app examples directory (if present)
+COPY --chown=user examples $HOME/app/examples
 
 # Expose port (HuggingFace Spaces will map this)
 EXPOSE 7860

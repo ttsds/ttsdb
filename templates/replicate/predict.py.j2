@@ -1,6 +1,8 @@
 """{{ model_name }} - Replicate/Cog predictor.
 
-Uses the {{ import_name }} package; no model logic duplicated here.
+Generated at {{ generated_at }} from {{ generated_from_template }}.
+
+Uses the {{ import_name }} package{% if has_external_pypi %} (which wraps {{ pypi_package_name }}){% endif %}; no model logic duplicated here.
 """
 
 import tempfile

@@ -1,0 +1,20 @@
+# Test data for MaskGCT
+# Used for integration tests and generating audio examples
+# Language codes use ISO 639-3 standard
+
+test_sentences:
+  eng:  # English
+    - text: "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good."
+      description: "Harvard sentences - phonetically balanced"
+  zho:  # Chinese
+    - text: "视野无限广，窗外有蓝天。"
+      description: "Chinese test sentence"
+
+# Reference audio for voice cloning tests
+reference_audio:
+  eng:
+    url: "https://speechresearch.github.io/audio/fastspeech2/audio/gt_recording_2/0000000004.mp3"
+    text: "Were the leaders in this luckless change, though our own Baskerville, who was at work some years before them, went much on the same lines."
+  zho:
+    url: "https://swivid.github.io/F5-TTS/audios/speed_control/speed_control_1.wav"
+    text: "對，這就是我，萬人敬仰的太乙真人。雖然有點嬰兒肥，但也掩不住我，逼人的帥氣。"

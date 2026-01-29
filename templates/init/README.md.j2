@@ -1,11 +1,17 @@
+<!-- Generated at {{ generated_at }} from {{ generated_from_template }} -->
+
 # {{ model_name }}
 
 The model description is sourced from `config.yaml` (`metadata.description`).
+{% if description %}
+
+{{ description }}
+{% endif %}
 
 ## Installation
 
 ```bash
-just setup {{ folder_name }}
+pip install {{ import_name }}
 ```
 
 ## Usage
@@ -26,8 +32,13 @@ Generated audio samples from integration tests:
 
 | Language | Text | Audio |
 |----------|------|-------|
-| English | "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/en_test_001.wav](audio_examples/en_test_001.wav) |
-| Chinese | "視野無限廣，窗外有藍天" | [audio_examples/zh_test_001.wav](audio_examples/zh_test_001.wav) |
+{%- set langs = (language_codes | default(["eng"])) %}
+{%- if "eng" in langs %}
+| English | "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/eng_test_001.wav](https://github.com/ttsds/ttsdb/raw/refs/heads/v2/models/{{ folder_name }}/audio_examples/eng_test_001.wav) |
+{%- endif %}
+{%- if "zho" in langs %}
+| Chinese | "視野無限廣，窗外有藍天" | [audio_examples/zho_test_001.wav](https://github.com/ttsds/ttsdb/raw/refs/heads/v2/models/{{ folder_name }}/audio_examples/zho_test_001.wav) |
+{%- endif %}
 
 To regenerate examples, run:
 ```bash

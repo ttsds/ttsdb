@@ -1,3 +1,5 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+
 metadata:
   name: "{{ model_name }}"
   id: "{{ folder_name }}"
@@ -11,8 +13,9 @@ metadata:
       name: # TODO: Dataset name
       url: # TODO: Dataset URL
       hours: # TODO: Number of hours
+  # Language codes use ISO 639-3 standard across ttsdb.
   languages:
-    - en
+    - eng
   num_parameters: # TODO: Number of parameters (in millions)
   release_date: # TODO: YYYY-MM-DD
   target_representation:
@@ -39,6 +42,13 @@ dependencies:
   system_packages:
     - build-essential
     - git
+# Set package.pypi when the model uses an external PyPI package (not vendored code).
+# The external package is installed and wrapped by the ttsdb_<model> package.
+# Omit when the model vendors research code from code.url.
+# package:
+#   pypi:
+#     name: ""  # External PyPI package name
+#     version: "1.0.0"  # External PyPI package version
 code:
   url: # TODO: GitHub URL
   commit: # TODO: Commit hash
@@ -75,5 +85,3 @@ api:
     language: language
     speaker_reference: speaker_reference
     text_reference: text_reference
-  providers:
-    - # TODO: replicate, huggingface, local, etc.

@@ -1,0 +1,70 @@
+metadata:
+  name: "E2 TTS"
+  id: "e2-tts"
+  description: |
+    A non-autoregressive masked U-Net transformer text-to-speech model.
+
+  training_data:
+    - id: amphion/Emilia-Dataset
+      name: Emilia Dataset
+      url: https://huggingface.co/datasets/amphion/Emilia-Dataset
+      hours: 100000
+  languages:
+    - eng
+    - zho
+  num_parameters: 335
+  release_date: 2024-10-30
+  target_representation:
+    - Mel
+  sample_rate: 24000
+  architecture:
+    - Non-Autoregressive
+    - Masked
+    - Flow Matching
+    - U-Net Transformer
+dependencies:
+  python: ">=3.10,<=3.14"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - build-essential
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+code:
+  url: https://github.com/SWivid/F5-TTS
+  commit: 0fe34a862c4d65d0367456536403e73824737a0f
+  # Upstream repo uses a src/ layout (contains src/f5_tts).
+  # We set this so setup_vendor_path() adds `<vendored_repo>/src` to sys.path.
+  root: src
+  license: mit
+weights:
+  url: https://huggingface.co/SWivid/E2-TTS
+  commit: 67a123c000395128b7410eb6566a6db3162e4687
+  license: cc-by-nc-4.0
+external:
+  citations:
+    - id: e2-tts
+      text: >
+        @inproceedings{e2-tts,
+          title={{E2 TTS}: Embarrassingly easy fully non-autoregressive zero-shot tts},
+          author={Eskimez, Sefik Emre and Wang, Xiaofei and Thakker, Manthan and Li, Canrun and Tsai, Chung-Hsien and Xiao, Zhen and Yang, Hemin and Zhu, Zirun and Tang, Min and Tan, Xu and others},
+          booktitle={2024 IEEE Spoken Language Technology Workshop (SLT)},
+          pages={682--689},
+          year={2024},
+          organization={IEEE}
+        }
+  paper_urls:
+    - https://ieeexplore.ieee.org/abstract/document/10832320
+api:
+  parameters:
+    text: text
+    language: language
+    speaker_reference: speaker_reference
+    text_reference: text_reference

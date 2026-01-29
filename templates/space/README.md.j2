@@ -1,4 +1,5 @@
 ---
+# Generated at {{ generated_at }} from {{ generated_from_template }}
 title: {{ model_name }}
 emoji: 🎤
 colorFrom: blue
@@ -7,6 +8,8 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: {{ weights_license }}
+preload_from_hub:
+  - {{ hf_repo }}/{{ folder_name }}
 ---
 
 # {{ model_name }} Text-to-Speech
