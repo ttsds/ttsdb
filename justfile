@@ -27,7 +27,7 @@ bootstrap:
     uv venv
     source .venv/bin/activate
     echo "Installing builder dependencies..."
-    uv pip install -e ".[dev]"
+    uv pip install -r requirements.txt
 
     # Install pre-commit if not present
     if ! command -v pre-commit &> /dev/null; then
