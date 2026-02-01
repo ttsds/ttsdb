@@ -3,8 +3,8 @@
 import os
 
 import pytest
-from ttsdb_core.vendor import get_vendor_path, vendor_context
 from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseModelIntegrationTests
+from ttsdb_core.vendor import get_vendor_path, vendor_context
 
 
 class TestConfig(BaseModelConfigTests):

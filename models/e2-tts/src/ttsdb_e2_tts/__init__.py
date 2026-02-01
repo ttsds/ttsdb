@@ -1,10 +1,10 @@
-from ttsdb_core import VoiceCloningTTSBase, AudioInput, AudioOutput, setup_vendor_path
-
-from pathlib import Path
 import os
 import re
 import tempfile
+from pathlib import Path
+
 import numpy as np
+from ttsdb_core import AudioInput, AudioOutput, VoiceCloningTTSBase, setup_vendor_path
 
 # Add vendored upstream F5-TTS code to sys.path (run `just fetch e2-tts` first).
 # This is safe even if the vendor directory is missing; imports only happen when
@@ -43,10 +43,9 @@ class E2TTS(VoiceCloningTTSBase):
         try:
             import torch
             from ema_pytorch import EMA
-            from vocos import Vocos
-
             from f5_tts.model import CFM, UNetT
             from f5_tts.model.utils import get_tokenizer
+            from vocos import Vocos
         except Exception as e:
             raise RuntimeError(
                 "Failed to import vendored E2/F5-TTS dependencies. "

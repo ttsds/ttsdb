@@ -18,8 +18,8 @@ just setup maskgct cpu
 
 ## TTS systems
 
-| **System** | **Training Data** | 🌐 **Multilingual** | **Languages** | 📚 **Training (k hours)** | 🧠 **Num. Parameters (M)** | 🎯 **Target Repr.** | 🔄 **NAR** | 🔁 **AR** | 🌊 **Diffusion** |
-|---|---|---:|---|---:|---:|---|---:|---:|---:|
+| **System** | **Training Data** | **Multilingual** | **Languages** | **Training (k hours)** | **Num. Parameters (M)** | **Target Repr.** | **NAR** | **AR** | **Diffusion** |
+|---|---|---|---|---|---|---|---|---|---|
 {% for s in systems -%}
 | [**{{ s.name }}**]({{ s.local_path }}) | {{ s.training_data }} | {{ s.multilingual }} | {{ s.languages }} | {{ s.training_k_hours }} | {{ s.num_parameters_m }} | {{ s.target_repr }} | {{ s.nar }} | {{ s.ar }} | {{ s.diffusion }} |
 {% endfor %}

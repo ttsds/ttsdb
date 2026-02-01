@@ -7,8 +7,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-
-from ttsdb_core import VoiceCloningTTSBase, AudioOutput, setup_vendor_path
+from ttsdb_core import AudioOutput, VoiceCloningTTSBase, setup_vendor_path
 
 # Vendored upstream repo (run `just fetch tortoise` / `just setup tortoise`).
 setup_vendor_path("ttsdb_tortoise")

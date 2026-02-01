@@ -704,7 +704,7 @@ def upload_space(
     if token:
         try:
             if hasattr(api, "add_space_secret"):
-                func = getattr(api, "add_space_secret")
+                func = api.add_space_secret
                 # Try common invocation patterns to support different huggingface_hub versions
                 try:
                     func(repo_id, "HF_TOKEN", token)
