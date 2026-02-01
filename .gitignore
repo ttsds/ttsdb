@@ -7,6 +7,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.uv_cache
 
 
 # Generated HuggingFace assets

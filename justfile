@@ -40,13 +40,15 @@ bootstrap:
 lint:
     pre-commit run --all-files
 
-# Run unit tests in CI (installs core + pytest, skips integration tests)
+# Run unit tests in CI for all models (setup + test in each model's venv)
 test-ci:
     #!/usr/bin/env bash
     set -euo pipefail
-    uv pip install --system -e core/
-    uv pip install --system pytest
-    pytest -q -m "not integration" core/ models/
+    for model in $(ls models); do
+        echo "=== Testing $model ==="
+        just setup "$model" cpu
+        just test "$model"
+    done
 
 # List available models
 models:
