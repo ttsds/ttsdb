@@ -31,20 +31,22 @@ class TestMaskGCTSpecificImports:
 
 class TestMaskGCTModelsContainer:
     """Test MaskGCTModels container class."""
-    
+
     def test_container_stores_all_components(self):
         """Container should store all model components."""
         from ttsdb_maskgct import MaskGCTModels
-        
+
         # Create mock components
         class MockModel:
             def to(self, device):
                 return self
+
             def eval(self):
                 return self
+
             def train(self):
                 return self
-        
+
         models = MaskGCTModels(
             semantic_model=MockModel(),
             semantic_codec=MockModel(),
@@ -56,7 +58,7 @@ class TestMaskGCTModelsContainer:
             semantic_mean=1.0,
             semantic_std=1.0,
         )
-        
+
         assert models.semantic_model is not None
         assert models.semantic_codec is not None
         assert models.codec_encoder is not None
@@ -66,22 +68,24 @@ class TestMaskGCTModelsContainer:
         assert models.s2a_model_full is not None
         assert models.semantic_mean == 1.0
         assert models.semantic_std == 1.0
-    
+
     def test_container_to_method(self):
         """Container to() should move all models to device."""
         from ttsdb_maskgct import MaskGCTModels
-        
+
         moved_to = []
-        
+
         class MockModel:
             def to(self, device):
                 moved_to.append(device)
                 return self
+
             def eval(self):
                 return self
+
             def train(self):
                 return self
-        
+
         models = MaskGCTModels(
             semantic_model=MockModel(),
             semantic_codec=MockModel(),
@@ -93,29 +97,32 @@ class TestMaskGCTModelsContainer:
             semantic_mean=1.0,
             semantic_std=1.0,
         )
-        
+
         models.to("cpu")
         # 7 models should have been moved
         assert len(moved_to) == 7
         assert all(d == "cpu" for d in moved_to)
-    
+
     def test_container_eval_method(self):
         """Container eval() should set all models to eval mode."""
         from ttsdb_maskgct import MaskGCTModels
-        
+
         eval_called = []
-        
+
         class MockModel:
             def __init__(self, name):
                 self.name = name
+
             def to(self, device):
                 return self
+
             def eval(self):
                 eval_called.append(self.name)
                 return self
+
             def train(self):
                 return self
-        
+
         models = MaskGCTModels(
             semantic_model=MockModel("semantic"),
             semantic_codec=MockModel("codec"),
@@ -127,18 +134,18 @@ class TestMaskGCTModelsContainer:
             semantic_mean=1.0,
             semantic_std=1.0,
         )
-        
+
         models.eval()
         assert len(eval_called) == 7
 
 
 class TestVendorContext:
     """Test vendor_context functionality."""
-    
+
     def test_vendor_context_restores_cwd(self):
         """vendor_context should restore working directory after exit."""
         original_cwd = os.getcwd()
-        
+
         # Use a directory we know exists
         vendor_path = get_vendor_path("ttsdb_maskgct")
         if not vendor_path.exists():
@@ -146,20 +153,20 @@ class TestVendorContext:
 
         with vendor_context("ttsdb_maskgct", cwd=True, env=None):
             pass
-        
+
         # Should be restored
         assert os.getcwd() == original_cwd
-    
+
     def test_vendor_context_restores_env_vars(self):
         """vendor_context should restore environment variables after exit."""
         # Set a test env var
         test_key = "TTSDB_TEST_VAR"
         original_value = os.environ.get(test_key)
-        
+
         try:
             with vendor_context("ttsdb_maskgct", cwd=False, env={test_key: "test_value"}):
                 assert os.environ.get(test_key) == "test_value"
-            
+
             # Should be restored
             assert os.environ.get(test_key) == original_value
         finally:
@@ -168,21 +175,23 @@ class TestVendorContext:
                 os.environ.pop(test_key, None)
             else:
                 os.environ[test_key] = original_value
-    
+
     def test_vendor_context_template_substitution(self):
         """vendor_context should substitute {vendor_path} in env values."""
         test_key = "TTSDB_TEST_PATH"
-        
+
         try:
-            with vendor_context("ttsdb_maskgct", cwd=False, env={test_key: "{vendor_path}"}) as vendor_path:
+            with vendor_context(
+                "ttsdb_maskgct", cwd=False, env={test_key: "{vendor_path}"}
+            ) as vendor_path:
                 assert os.environ.get(test_key) == str(vendor_path)
         finally:
             os.environ.pop(test_key, None)
-    
+
     def test_get_vendor_path_returns_path(self):
         """get_vendor_path should return a Path object."""
         from pathlib import Path
-        
+
         vendor_path = get_vendor_path("ttsdb_maskgct")
         assert isinstance(vendor_path, Path)
 

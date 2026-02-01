@@ -102,11 +102,15 @@ class BaseModelIntegrationTests:
 
     @pytest.fixture(scope="class")
     def synthesis_results(self, model, reference_audio, test_data):
-        all_sentences: dict[str, list[dict[str, Any]]] = (test_data or {}).get("test_sentences", {}) or {}
+        all_sentences: dict[str, list[dict[str, Any]]] = (test_data or {}).get(
+            "test_sentences", {}
+        ) or {}
         results: dict[tuple[str, int], tuple[Any, int]] = {}
 
         # If the model exposes supported languages in config, respect it.
-        supported = getattr(getattr(getattr(model, "model_config", None), "metadata", None), "languages", None)
+        supported = getattr(
+            getattr(getattr(model, "model_config", None), "metadata", None), "languages", None
+        )
 
         for lang, sentences in all_sentences.items():
             if supported is not None and lang not in supported:
@@ -149,4 +153,3 @@ class BaseModelIntegrationTests:
             sf.write(str(output_path), audio, sr)
             assert output_path.exists()
             assert output_path.stat().st_size > 0
-

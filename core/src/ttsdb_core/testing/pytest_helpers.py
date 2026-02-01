@@ -26,4 +26,3 @@ def skip_integration_by_default(config, items) -> None:
         for item in items:
             if "integration" in item.keywords:
                 item.add_marker(skip_integration)
-

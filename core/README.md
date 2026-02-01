@@ -31,4 +31,3 @@ For local development automation, `config.yaml` may also include:
 
 - `dependencies.python_venv`: a concrete interpreter version used by `just setup` when creating a venv
 - `dependencies.python_tested`: optional explicit list of tested interpreters (human-facing)
-

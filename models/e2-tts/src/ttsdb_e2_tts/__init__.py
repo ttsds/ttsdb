@@ -14,7 +14,7 @@ setup_vendor_path("ttsdb_e2_tts")
 
 class E2TTS(VoiceCloningTTSBase):
     """E2 TTS voice cloning TTS model.
-    
+
     Config is automatically loaded and accessible via `self.model_config`.
     This wrapper re-uses the helper utilities from the upstream repo that are
     used in the Cog predictor (cog_tts/models/e2/predict.py).
@@ -168,7 +168,9 @@ class E2TTS(VoiceCloningTTSBase):
             import torchaudio
             from f5_tts.model.utils import convert_char_to_pinyin
         except Exception as e:
-            raise RuntimeError("Missing E2/F5-TTS runtime deps (torchaudio / vendored utils).") from e
+            raise RuntimeError(
+                "Missing E2/F5-TTS runtime deps (torchaudio / vendored utils)."
+            ) from e
 
         ref_text = kwargs.get("text_reference") or kwargs.get("reference_text") or ""
         if not str(ref_text).strip():
@@ -223,7 +225,9 @@ class E2TTS(VoiceCloningTTSBase):
             ref_audio_len = audio.shape[-1] // hop_length
             ref_text_len = len(ref_text) + len(re.findall(zh_pause_punc, ref_text))
             gen_text_len = len(chunk) + len(re.findall(zh_pause_punc, chunk))
-            duration = ref_audio_len + int(ref_audio_len / max(ref_text_len, 1) * gen_text_len / speed)
+            duration = ref_audio_len + int(
+                ref_audio_len / max(ref_text_len, 1) * gen_text_len / speed
+            )
 
             with torch.inference_mode():
                 generated, _ = self.model.sample(

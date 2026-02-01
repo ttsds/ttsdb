@@ -38,4 +38,3 @@ def normalize_name(name: str) -> dict[str, str]:
         "import_name": import_name,
         "class_name": class_name,
     }
-

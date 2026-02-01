@@ -47,7 +47,7 @@ ISO_639_3_TO_MASKGCT = {
 
 class MaskGCTModels:
     """Container for all MaskGCT model components."""
-    
+
     def __init__(
         self,
         semantic_model,
@@ -69,7 +69,7 @@ class MaskGCTModels:
         self.s2a_model_full = s2a_model_full
         self.semantic_mean = semantic_mean
         self.semantic_std = semantic_std
-    
+
     def to(self, device):
         """Move all models to the specified device."""
         self.semantic_model = self.semantic_model.to(device)
@@ -80,7 +80,7 @@ class MaskGCTModels:
         self.s2a_model_1layer = self.s2a_model_1layer.to(device)
         self.s2a_model_full = self.s2a_model_full.to(device)
         return self
-    
+
     def eval(self):
         """Set all models to evaluation mode."""
         self.semantic_model.eval()
@@ -91,7 +91,7 @@ class MaskGCTModels:
         self.s2a_model_1layer.eval()
         self.s2a_model_full.eval()
         return self
-    
+
     def train(self):
         """Set all models to training mode."""
         self.semantic_model.train()
@@ -106,12 +106,12 @@ class MaskGCTModels:
 
 class MaskGCT(VoiceCloningTTSBase):
     """MaskGCT voice cloning TTS model.
-    
-    MaskGCT is a zero-shot text-to-speech model using masked generative codec 
+
+    MaskGCT is a zero-shot text-to-speech model using masked generative codec
     transformer from Amphion.
-    
+
     Config is accessible via `self.model_config`.
-    
+
     Example:
         >>> model = MaskGCT(model_path="/path/to/maskgct/checkpoints")
         >>> audio, sr = model.synthesize(
@@ -120,15 +120,15 @@ class MaskGCT(VoiceCloningTTSBase):
         ...     text_reference="This is the speaker reference text.",
         ...     language="eng"  # ISO 639-3 code (or "en" for backwards compatibility)
         ... )
-    
+
     Args:
         model_path: Path to local model directory containing checkpoint files.
         model_id: HuggingFace model identifier (e.g., "amphion/MaskGCT").
         device: Device to run the model on ('cpu', 'cuda', 'cuda:0', etc.).
     """
-    
+
     _package_name = "ttsdb_maskgct"
-    
+
     # Output sample rate for MaskGCT
     SAMPLE_RATE = 24000
 
@@ -137,7 +137,7 @@ class MaskGCT(VoiceCloningTTSBase):
         model_path: str | Path | None = None,
         model_id: str | None = None,
         device: str | torch.device | None = None,
-        **kwargs
+        **kwargs,
     ):
         self._inference_pipeline = None
         self._weights_base: str | None = None
@@ -145,10 +145,10 @@ class MaskGCT(VoiceCloningTTSBase):
 
     def _load_model(self, load_path: str) -> MaskGCTModels:
         """Load all MaskGCT model components.
-        
+
         Args:
             load_path: Path to model checkpoints directory or HuggingFace ID.
-            
+
         Returns:
             MaskGCTModels container with all model components.
         """
@@ -158,6 +158,7 @@ class MaskGCT(VoiceCloningTTSBase):
         else:
             # Assume HuggingFace model ID - download checkpoints
             from huggingface_hub import snapshot_download
+
             base = snapshot_download(repo_id=load_path)
         self._weights_base = str(base)
 
@@ -211,10 +212,12 @@ class MaskGCT(VoiceCloningTTSBase):
                         t2s_model, os.path.join(base, "t2s_model/model.safetensors")
                     )
                     safetensors.torch.load_model(
-                        s2a_model_1layer, os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors")
+                        s2a_model_1layer,
+                        os.path.join(base, "s2a_model/s2a_model_1layer/model.safetensors"),
                     )
                     safetensors.torch.load_model(
-                        s2a_model_full, os.path.join(base, "s2a_model/s2a_model_full/model.safetensors")
+                        s2a_model_full,
+                        os.path.join(base, "s2a_model/s2a_model_full/model.safetensors"),
                     )
                 else:
                     # Use accelerate for CPU loading
@@ -265,7 +268,7 @@ class MaskGCT(VoiceCloningTTSBase):
                 os.environ.pop("TTSDB_VENDOR_ASSETS_DIR", None)
             else:
                 os.environ["TTSDB_VENDOR_ASSETS_DIR"] = old_assets_dir
-    
+
     def _get_inference_pipeline(self):
         """Get or create the MaskGCT inference pipeline."""
         if self._inference_pipeline is None:
@@ -293,7 +296,7 @@ class MaskGCT(VoiceCloningTTSBase):
                     os.environ.pop("TTSDB_VENDOR_ASSETS_DIR", None)
                 else:
                     os.environ["TTSDB_VENDOR_ASSETS_DIR"] = old_assets_dir
-        
+
         return self._inference_pipeline
 
     def _synthesize(
@@ -305,10 +308,10 @@ class MaskGCT(VoiceCloningTTSBase):
         language: str = "eng",
         target_language: str | None = None,
         target_len: int | None = None,
-        **kwargs
+        **kwargs,
     ) -> AudioOutput:
         """Synthesize speech from text using MaskGCT.
-        
+
         Args:
             text: Input text to synthesize.
             reference_audio: Reference audio as numpy array for voice cloning.
@@ -316,32 +319,32 @@ class MaskGCT(VoiceCloningTTSBase):
             text_reference: Transcript of the reference audio.
             language: Language code for the reference audio (ISO 639-3 or 639-1).
                      Supported: eng/en, zho/zh, jpn/ja, kor/ko, fra/fr, deu/de.
-            target_language: Language code for the target text. If None, uses 
+            target_language: Language code for the target text. If None, uses
                            the same as `language`.
-            target_len: Target length for the generated audio. If None, 
+            target_len: Target length for the generated audio. If None,
                        determined automatically.
             **kwargs: Additional parameters (unused).
-            
+
         Returns:
             Tuple of (audio_array, sample_rate).
         """
         if target_language is None:
             target_language = language
-        
+
         # Map ISO 639-3 codes to MaskGCT internal codes (ISO 639-1)
         language = ISO_639_3_TO_MASKGCT.get(language, language)
         target_language = ISO_639_3_TO_MASKGCT.get(target_language, target_language)
-        
+
         # MaskGCT expects a file path, so we need to save the reference audio
         # to a temporary file
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
             sf.write(tmp_path, reference_audio, reference_sample_rate)
-        
+
         try:
             with vendor_context(self._package_name, cwd=True, env=_AMPHION_ENV):
                 pipeline = self._get_inference_pipeline()
-                
+
                 recovered_audio = pipeline.maskgct_inference(
                     tmp_path,
                     text_reference,
@@ -350,11 +353,11 @@ class MaskGCT(VoiceCloningTTSBase):
                     target_language,
                     target_len=target_len,
                 )
-            
+
             # Convert to numpy array if needed
             if isinstance(recovered_audio, torch.Tensor):
                 recovered_audio = recovered_audio.cpu().numpy()
-            
+
             return recovered_audio, self.SAMPLE_RATE
         finally:
             # Clean up temporary file

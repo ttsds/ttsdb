@@ -25,7 +25,7 @@ def synthesize(
     language: str,
 ) -> tuple[int, np.ndarray]:
     """Synthesize speech from text.
-    
+
     Expects `reference_audio` to be a filepath (Gradio `type="filepath"`).
     Returns (sample_rate, audio_array) as expected by Gradio.
     """
@@ -54,7 +54,7 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
     gr.Markdown(
         """
         # {{ model_name }} Text-to-Speech
-        
+
 {% if description %}
 {% filter indent(width=8) %}
 {{ description }}
@@ -63,14 +63,14 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
 {% else %}
         Clone any voice with just a few seconds of reference audio.
 {% endif %}
-        
+
         > **Note:** This demo is not affiliated with or endorsed by the original authors.
         > It is provided for research and educational purposes only.
-        
+
         **Links:** [Code]({{ code_url }}){% for url in paper_urls %} | [Paper]({{ url }}){% endfor %}{% if weights_url %} | [Weights]({{ weights_url }}){% endif %}
         """
     )
-    
+
     with gr.Row():
         with gr.Column():
             reference_audio = gr.Audio(
@@ -97,13 +97,13 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
                 value="{{ language_codes[0] if language_codes else 'eng' }}",
             )
             submit_btn = gr.Button("Synthesize", variant="primary")
-        
+
         with gr.Column():
             output_audio = gr.Audio(
                 label="Synthesized Audio",
                 type="numpy",
             )
-    
+
     # Example inputs from test_data.yaml
     # Assume packaged example audios live under the repository `examples/` folder.
     _runtime_examples = []
@@ -120,18 +120,18 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         examples=_runtime_examples,
         inputs=[reference_audio, reference_text, text_input, language],
     )
-    
+
     submit_btn.click(
         fn=synthesize,
         inputs=[text_input, reference_audio, reference_text, language],
         outputs=[output_audio],
     )
-    
+
     # Footer with model information and citations
     gr.Markdown(
         """
         ## Model Information
-        
+
         | Property | Value |
         |----------|-------|
         | **Architecture** | {{ architecture | join(", ") }} |
@@ -140,12 +140,12 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         | **Languages** | {{ language_names | join(", ") }} |{% if release_date %}
         | **Release Date** | {{ release_date }} |
 {% endif %}
-        
+
 {% if citations %}
         ## Citations
-        
+
         If you use this model, please cite the original work:
-        
+
 {% for citation in citations %}
         ```bibtex
 {% filter indent(width=8) %}

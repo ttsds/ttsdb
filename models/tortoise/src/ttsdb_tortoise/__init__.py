@@ -16,8 +16,7 @@ __all__ = ["TorToise"]
 
 
 class TorToise(VoiceCloningTTSBase):
-    """Tortoise voice cloning TTS model.
-    """
+    """Tortoise voice cloning TTS model."""
 
     _package_name = "ttsdb_tortoise"
     SAMPLE_RATE = 24000
@@ -97,9 +96,7 @@ class TorToise(VoiceCloningTTSBase):
             torchaudio.save(tmp_path, wav, 22050)
 
             reference_clips = [utils.audio.load_audio(tmp_path, 22050)]
-            pcm_audio = self.tts.tts_with_preset(
-                text, voice_samples=reference_clips, preset="fast"
-            )
+            pcm_audio = self.tts.tts_with_preset(text, voice_samples=reference_clips, preset="fast")
 
             # pcm_audio is a batch of audio tensors; return first as numpy.
             out = pcm_audio[0].detach().cpu().numpy()

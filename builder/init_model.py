@@ -31,14 +31,14 @@ def init_model(
     dry_run: bool = False,
 ) -> Path:
     """Initialize a new model from templates.
-    
+
     Args:
         name: The model name.
         python_version: Python version for config.yaml.
         torch_version: Torch version constraint for config.yaml.
         output_dir: Output directory. Defaults to models/<folder_name>.
         dry_run: If True, print what would be created without creating files.
-        
+
     Returns:
         Path to the created model directory.
     """
@@ -82,7 +82,7 @@ def init_model(
     hf_repo = (hf_repo or os.environ.get("TTSDB_HF_REPO") or "ttsds").strip()
     names["hf_repo"] = hf_repo
     names["hf_model_id"] = f"{hf_repo}/{names['folder_name']}"
-    
+
     repo_root = Path(__file__).parent.parent
 
     # Set up paths
@@ -90,13 +90,13 @@ def init_model(
     if output_dir is None:
         # Default: repo_root/models/<folder_name>
         output_dir = repo_root / "models" / names["folder_name"]
-    
+
     # Set up Jinja2
     env = Environment(
         loader=FileSystemLoader(str(templates_dir)),
         keep_trailing_newline=True,
     )
-    
+
     # Template file mappings: (template_name, output_path)
     templates = [
         ("pyproject.toml.j2", "pyproject.toml"),
@@ -109,7 +109,7 @@ def init_model(
         ("conftest.py.j2", "tests/conftest.py"),
         ("test_model.py.j2", "tests/test_model.py"),
     ]
-    
+
     if dry_run:
         print(f"Would create model '{names['model_name']}' at {output_dir}")
         print(f"  folder_name:     {names['folder_name']}")
@@ -124,10 +124,10 @@ def init_model(
         for _, output_path in templates:
             print(f"  {output_dir / output_path}")
         return output_dir
-    
+
     # Create output directory
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Render templates
     generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     for template_name, output_path in templates:
@@ -153,19 +153,19 @@ def init_model(
                 # Best-effort: templates still render even if parsing fails.
                 names.setdefault("description", "")
                 names.setdefault("language_codes", [])
-        
+
         file_path = output_dir / output_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content)
         print(f"Created {file_path}")
-    
+
     print(f"\n✓ Model '{names['model_name']}' initialized at {output_dir}")
     print("\nNext steps:")
     print(f"  1. cd {output_dir}")
     print("  2. Fill in the TODO fields in config.yaml")
     print(f"  3. Implement _load_model and _synthesize in src/{names['import_name']}/__init__.py")
     print("  4. uv sync")
-    
+
     return output_dir
 
 
@@ -186,7 +186,8 @@ Examples:
         help="Model name (e.g., 'MaskGCT', 'XTTS_v2', 'ParlerTTS')",
     )
     parser.add_argument(
-        "--python", "-p",
+        "--python",
+        "-p",
         default="3.10",
         help="Legacy: either a venv interpreter (e.g. 3.11) or a specifier (e.g. >=3.10,<3.12).",
     )
@@ -206,22 +207,25 @@ Examples:
         help="HuggingFace org/repo prefix for generated model_id (default: env TTSDB_HF_REPO or 'ttsds').",
     )
     parser.add_argument(
-        "--torch", "-t",
+        "--torch",
+        "-t",
         default=">=2.0.0",
         help="Torch version constraint (default: >=2.0.0)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=Path,
         default=None,
         help="Output directory (default: models/<folder_name>)",
     )
     parser.add_argument(
-        "--dry-run", "-n",
+        "--dry-run",
+        "-n",
         action="store_true",
         help="Show what would be created without creating files",
     )
-    
+
     args = parser.parse_args()
     init_model(
         args.name,

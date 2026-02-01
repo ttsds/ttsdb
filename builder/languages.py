@@ -15,6 +15,7 @@ from dataclasses import dataclass
 @dataclass
 class Language:
     """A language with ISO 639-3 code and metadata."""
+
     code: str  # ISO 639-3 three-letter code
     name: str  # English name
     native_name: str | None = None  # Native name
@@ -48,7 +49,6 @@ LANGUAGES: dict[str, Language] = {
     "kan": Language("kan", "Kannada", "ಕನ್ನಡ", "kn"),
     "mal": Language("mal", "Malayalam", "മലയാളം", "ml"),
     "urd": Language("urd", "Urdu", "اردو", "ur"),
-    
     # European languages
     "nld": Language("nld", "Dutch", "Nederlands", "nl"),
     "pol": Language("pol", "Polish", "Polski", "pl"),
@@ -80,38 +80,36 @@ LANGUAGES: dict[str, Language] = {
 
 # Build reverse lookup from ISO 639-1 to ISO 639-3
 _ISO639_1_TO_3: dict[str, str] = {
-    lang.iso639_1: code 
-    for code, lang in LANGUAGES.items() 
-    if lang.iso639_1
+    lang.iso639_1: code for code, lang in LANGUAGES.items() if lang.iso639_1
 }
 
 
 def get_language(code: str) -> Language | None:
     """Get a language by ISO 639-3 or ISO 639-1 code.
-    
+
     Args:
         code: Language code (either ISO 639-1 or ISO 639-3).
-        
+
     Returns:
         Language object if found, None otherwise.
     """
     # Try ISO 639-3 first
     if code in LANGUAGES:
         return LANGUAGES[code]
-    
+
     # Try ISO 639-1 to ISO 639-3 conversion
     if code in _ISO639_1_TO_3:
         return LANGUAGES[_ISO639_1_TO_3[code]]
-    
+
     return None
 
 
 def get_language_name(code: str) -> str:
     """Get the English name for a language code.
-    
+
     Args:
         code: Language code (ISO 639-1 or ISO 639-3).
-        
+
     Returns:
         Language name, or the original code if not found.
     """
@@ -121,10 +119,10 @@ def get_language_name(code: str) -> str:
 
 def normalize_language_code(code: str) -> str:
     """Convert ISO 639-1 code to ISO 639-3 if possible.
-    
+
     Args:
         code: Language code (ISO 639-1 or ISO 639-3).
-        
+
     Returns:
         ISO 639-3 code if conversion possible, otherwise original code.
     """
@@ -135,10 +133,10 @@ def normalize_language_code(code: str) -> str:
 
 def is_valid_language_code(code: str) -> bool:
     """Check if a language code is valid (known ISO 639-3 or ISO 639-1).
-    
+
     Args:
         code: Language code to validate.
-        
+
     Returns:
         True if the code is recognized.
     """
@@ -147,10 +145,10 @@ def is_valid_language_code(code: str) -> bool:
 
 def get_language_choices_for_gradio(codes: list[str]) -> list[tuple[str, str]]:
     """Get language choices formatted for Gradio dropdown.
-    
+
     Args:
         codes: List of ISO 639-3 language codes.
-        
+
     Returns:
         List of (display_name, code) tuples for Gradio.
     """

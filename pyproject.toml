@@ -32,4 +32,3 @@ testpaths = [
 markers = [
   "integration: integration tests that require model weights and/or network",
 ]
-

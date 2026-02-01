@@ -20,12 +20,12 @@ __all__ = ["F5TTS"]
 
 class F5TTS(VoiceCloningTTSBase):
     """F5-TTS voice cloning TTS model.
-    
+
     F5-TTS is a non-autoregressive DiT Transformer text-to-speech model.
     This wrapper uses *vendored* upstream code from the SWivid/F5-TTS repo.
-    
+
     Config is accessible via `self.model_config`.
-    
+
     Example:
         >>> model = F5TTS(model_id="SWivid/F5-TTS")
         >>> audio, sr = model.synthesize(
@@ -33,15 +33,15 @@ class F5TTS(VoiceCloningTTSBase):
         ...     reference_audio="speaker.wav",
         ...     text_reference="This is the speaker reference text."
         ... )
-    
+
     Args:
         model_path: Path to local model directory containing checkpoint files.
         model_id: HuggingFace model identifier (e.g., "SWivid/F5-TTS").
         device: Device to run the model on ('cpu', 'cuda', 'cuda:0', etc.).
     """
-    
+
     _package_name = "ttsdb_f5_tts"
-    
+
     # Output sample rate for F5-TTS
     SAMPLE_RATE = 24000
 
@@ -50,7 +50,7 @@ class F5TTS(VoiceCloningTTSBase):
         model_path: str | Path | None = None,
         model_id: str | None = None,
         device: str | torch.device | None = None,
-        **kwargs
+        **kwargs,
     ):
         self._weights_base: str | None = None
         self.vocoder = None
@@ -206,23 +206,23 @@ class F5TTS(VoiceCloningTTSBase):
         reference_audio: np.ndarray,
         reference_sample_rate: int,
         text_reference: str = "",
-        **kwargs
+        **kwargs,
     ) -> AudioOutput:
         """Synthesize speech from text using F5-TTS.
-        
+
         Args:
             text: Input text to synthesize.
             reference_audio: Reference audio as numpy array for voice cloning.
             reference_sample_rate: Sample rate of reference audio.
             text_reference: Transcript of the reference audio.
             **kwargs: Additional parameters (unused).
-            
+
         Returns:
             Tuple of (audio_array, sample_rate).
         """
         if not text_reference:
             raise ValueError("text_reference is required for F5-TTS")
-        
+
         # Mirror the Space inference logic as closely as possible.
         try:
             import torchaudio
@@ -284,7 +284,9 @@ class F5TTS(VoiceCloningTTSBase):
             ref_audio_len = audio.shape[-1] // hop_length
             ref_text_len = len(ref_text) + len(re.findall(zh_pause_punc, ref_text))
             gen_text_len = len(chunk) + len(re.findall(zh_pause_punc, chunk))
-            duration = ref_audio_len + int(ref_audio_len / max(ref_text_len, 1) * gen_text_len / speed)
+            duration = ref_audio_len + int(
+                ref_audio_len / max(ref_text_len, 1) * gen_text_len / speed
+            )
 
             with torch.inference_mode():
                 generated, _ = self.model.sample(
@@ -316,4 +318,3 @@ class F5TTS(VoiceCloningTTSBase):
             out = out2
 
         return out.astype(np.float32), target_sample_rate
-

@@ -6,6 +6,44 @@ replicate_repo := env_var_or_default("TTSDB_REPLICATE_REPO", "ttsds")
 
 models := `ls models`
 
+# ---- Bootstrap & Development Setup ----
+
+# Install all dependencies (uv, pre-commit hooks). Run once after cloning.
+bootstrap:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Install uv if not present
+    if ! command -v uv &> /dev/null; then
+        echo "Installing uv..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "✓ uv installed. You may need to restart your shell or run: source ~/.local/bin/env"
+    else
+        echo "✓ uv already installed ($(uv --version))"
+    fi
+
+    # Install pre-commit if not present
+    if ! command -v pre-commit &> /dev/null; then
+        echo "Installing pre-commit..."
+        uv tool install pre-commit
+    else
+        echo "✓ pre-commit already installed ($(pre-commit --version))"
+    fi
+
+    # Install pre-commit hooks
+    echo "Installing pre-commit hooks..."
+    pre-commit install
+
+    echo "✓ Bootstrap complete!"
+
+# Run linters (ruff check + format) via pre-commit
+lint:
+    pre-commit run --all-files
+
+# List available models
+models:
+    @ls models
+
 # Regenerate the repository README.md
 readme:
     python builder/root_readme.py
@@ -33,7 +71,7 @@ setup model device="cpu" torch_version="" python="":
     #!/usr/bin/env bash
     set -euo pipefail
     cd models/{{model}}
-    
+
     # Pick Python interpreter for venv
     # Prefer CLI arg > dependencies.python_venv > default (.python-version)
     PYTHON_VERSION="{{python}}"
@@ -47,17 +85,17 @@ setup model device="cpu" torch_version="" python="":
     fi
     PYTHON_VERSION=${PYTHON_VERSION:-"{{default_python}}"}
     echo "Setting up {{model}} with Python ${PYTHON_VERSION} ({{device}})..."
-    
+
     # Fetch vendor code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
     python ../../builder/vendor.py .
-    
+
     # Create venv with specified Python version (--clear to replace existing)
     echo "Creating venv with Python ${PYTHON_VERSION}..."
     uv venv --python ${PYTHON_VERSION} --clear
-    
+
     # Activate the venv for subsequent commands
     source .venv/bin/activate
-    
+
     # Get torch version: CLI arg > config.yaml > default
     TORCH_VERSION="{{torch_version}}"
     if [ -z "$TORCH_VERSION" ]; then
@@ -65,7 +103,7 @@ setup model device="cpu" torch_version="" python="":
         TORCH_VERSION=$(grep -A1 "dependencies:" config.yaml | grep "torch:" | sed 's/.*torch: *"\([^"]*\)".*/\1/' || echo ">=2.0.0")
         TORCH_VERSION=${TORCH_VERSION:-">=2.0.0"}
     fi
-    
+
     # Set PyTorch index URL based on device
     if [ "{{device}}" = "cpu" ]; then
         TORCH_INDEX="https://download.pytorch.org/whl/cpu"
@@ -74,15 +112,15 @@ setup model device="cpu" torch_version="" python="":
         TORCH_INDEX="https://download.pytorch.org/whl/cu121"
         echo "Installing PyTorch${TORCH_VERSION} + torchaudio (CUDA 12.1)..."
     fi
-    
+
     # Install PyTorch and torchaudio first from the appropriate index
     uv pip install "torch${TORCH_VERSION}" "torchaudio" --index-url ${TORCH_INDEX}
-    
+
     # Install ttsdb-core and model dependencies
     echo "Installing dependencies..."
     uv pip install -e ../../core/
     uv pip install -e .
-    
+
     echo "✓ Setup complete! Activate with: source models/{{model}}/.venv/bin/activate"
 
 # Run unit tests for a model
@@ -182,19 +220,19 @@ hf-space-run model:
     #!/usr/bin/env bash
     set -euo pipefail
     cd models/{{model}}
-    
+
     # Generate space files if they do not exist
     if [ ! -f space/app.py ]; then
         echo "Generating space files..."
         python ../../builder/huggingface.py space .
     fi
-    
+
     # Activate the venv
     source .venv/bin/activate
-    
+
     # Install gradio if not present
     uv pip install gradio
-    
+
     # Run the space
     echo "Starting {{model}} space at http://localhost:7860..."
     cd space && python app.py

@@ -9,15 +9,15 @@ from ttsdb_core import VoiceCloningTTSBase, AudioInput, AudioOutput, setup_vendo
 
 class {{ class_name }}(VoiceCloningTTSBase):
     """{{ model_name }} voice cloning TTS model.
-    
+
     Config is automatically loaded and accessible via `self.model_config`.
-    
+
     Example:
         >>> model = {{ class_name }}(model_id="...")
         >>> print(model.model_config.metadata.name)
         '{{ model_name }}'
     """
-    
+
     _package_name = "{{ import_name }}"
 
     def _load_model(self, load_path):

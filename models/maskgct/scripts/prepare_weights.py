@@ -20,16 +20,16 @@ HF_DIR = MODEL_DIR / "weights"
 
 def main():
     print(f"Downloading weights from {SOURCE_REPO}...")
-    
+
     HF_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     snapshot_download(
         repo_id=SOURCE_REPO,
         revision=SOURCE_COMMIT,
         local_dir=HF_DIR,
         local_dir_use_symlinks=False,
     )
-    
+
     print(f"✓ Weights downloaded to {HF_DIR}")
 
 

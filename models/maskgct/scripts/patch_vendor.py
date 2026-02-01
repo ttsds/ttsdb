@@ -21,7 +21,9 @@ from pathlib import Path
 import yaml
 
 
-def patch_poly_bert_onnx_fallback(*, vendor_root: Path, py_file: str, env_var: str, asset_rel: str) -> None:
+def patch_poly_bert_onnx_fallback(
+    *, vendor_root: Path, py_file: str, env_var: str, asset_rel: str
+) -> None:
     """Patch chinese_model_g2p.py to resolve poly_bert_model.onnx via an env var."""
     file_path = vendor_root / py_file
     if not file_path.exists():
@@ -111,4 +113,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

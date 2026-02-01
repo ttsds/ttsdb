@@ -25,7 +25,9 @@ def _resolve_weights_path(model_root: Path, *, prefer_weights_dir: bool) -> Path
     return model_root / "weights"
 
 
-def make_weights_path_fixture(model_root: Path, *, prefer_weights_dir: bool = True, scope: str = "class"):
+def make_weights_path_fixture(
+    model_root: Path, *, prefer_weights_dir: bool = True, scope: str = "class"
+):
     import pytest
 
     @pytest.fixture(scope=scope)
@@ -101,4 +103,3 @@ def make_audio_examples_dir_fixture(model_root: Path, *, scope: str = "function"
         return examples_dir
 
     return audio_examples_dir
-

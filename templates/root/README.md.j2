@@ -4,16 +4,22 @@ TTSDB is a monorepo of small, installable Python packages for text-to-speech (TT
 
 ## Requirements
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-cargo install just
-```
+[just](https://github.com/casey/just) is the only dependency that needs to be installed before getting started.
 
 ## Quickstart
 
 ```bash
+# Install uv, pre-commit, and git hooks (one-time setup)
+just bootstrap
+
+# List available models
 just models
+
+# Set up a model for development
 just setup maskgct cpu
+
+# Run linters
+just lint
 ```
 
 ## TTS systems

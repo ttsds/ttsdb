@@ -114,7 +114,9 @@ def gather_system_rows(repo_root: Path) -> list[SystemRow]:
         multilingual = _checkmark(len(languages) > 1)
         languages_s = ", ".join(languages) if languages else "Unknown"
 
-        training_items = meta.get("training_data") if isinstance(meta.get("training_data"), list) else []
+        training_items = (
+            meta.get("training_data") if isinstance(meta.get("training_data"), list) else []
+        )
         training_data = _join_training_data(training_items)  # type: ignore[arg-type]
         training_hours = _sum_training_hours(training_items)  # type: ignore[arg-type]
         training_k_hours = _fmt_k_hours(training_hours)
@@ -176,4 +178,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
