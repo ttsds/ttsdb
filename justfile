@@ -40,6 +40,14 @@ bootstrap:
 lint:
     pre-commit run --all-files
 
+# Run unit tests in CI (installs core + pytest, skips integration tests)
+test-ci:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv pip install --system -e core/
+    uv pip install --system pytest
+    pytest -q -m "not integration" core/ models/
+
 # List available models
 models:
     @ls models
