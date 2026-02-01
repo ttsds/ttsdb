@@ -26,3 +26,4 @@ jobs:
         run: |
           just bootstrap
           just test-ci
+        shell: bash
