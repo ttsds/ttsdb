@@ -6,6 +6,10 @@ replicate_repo := env_var_or_default("TTSDB_REPLICATE_REPO", "ttsds")
 
 models := `ls models`
 
+# Regenerate the repository README.md
+readme:
+    python builder/root_readme.py
+
 # Initialize a new model from templates
 #
 # Python version knobs:

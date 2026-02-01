@@ -20,10 +20,9 @@ just setup maskgct cpu
 
 | **System** | **Training Data** | 🌐 **Multilingual** | **Languages** | 📚 **Training (k hours)** | 🧠 **Num. Parameters (M)** | 🎯 **Target Repr.** | 🔄 **NAR** | 🔁 **AR** | 🌊 **Diffusion** |
 |---|---|---:|---|---:|---:|---|---:|---:|---:|
-| [**E2 TTS**](models/e2-tts) | Emilia Dataset | ✅ | eng, zho | 100 | 335 | Mel | ✅ | ❌ | ✅ |
-| [**F5-TTS**](models/f5-tts) | Emilia Dataset | ✅ | eng, zho | 100 | 335 | Mel | ✅ | ❌ | ✅ |
-| [**MaskGCT**](models/maskgct) | Emilia Dataset | ✅ | eng, zho, kor, jpn, fra, deu | 100 | 1010 | Codec | ✅ | ❌ | ❌ |
-| [**TorToise**](models/tortoise) | LibriTTS, HifiTTS | ❌ | eng | Unknown | 960 | Mel | ❌ | ✅ | ✅ |
+{% for s in systems -%}
+| [**{{ s.name }}**]({{ s.local_path }}) | {{ s.training_data }} | {{ s.multilingual }} | {{ s.languages }} | {{ s.training_k_hours }} | {{ s.num_parameters_m }} | {{ s.target_repr }} | {{ s.nar }} | {{ s.ar }} | {{ s.diffusion }} |
+{% endfor %}
 
 ## Disclaimers
 
