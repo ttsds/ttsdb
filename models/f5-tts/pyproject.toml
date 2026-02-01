@@ -27,6 +27,7 @@ dependencies = [
     "numpy<=1.26.4",
     "pydub",
     "pypinyin",
+    "pyyaml",
     "safetensors",
     "soundfile",
     "tomli",
