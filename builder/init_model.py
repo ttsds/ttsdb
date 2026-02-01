@@ -149,10 +149,21 @@ def init_model(
                 if isinstance(langs, str):
                     langs = [langs]
                 names["language_codes"] = list(langs)
+                # Extract sample_rate for test templates
+                sr = meta.get("sample_rate")
+                names["sample_rate"] = sr if isinstance(sr, int) else None
+                # Extract code.root for test templates (if not a TODO placeholder)
+                code_cfg = cfg.get("code") or {}
+                code_root = code_cfg.get("root") if isinstance(code_cfg, dict) else None
+                names["code_root"] = (
+                    code_root if code_root and not str(code_root).startswith("#") else None
+                )
             except Exception:
                 # Best-effort: templates still render even if parsing fails.
                 names.setdefault("description", "")
                 names.setdefault("language_codes", [])
+                names.setdefault("sample_rate", None)
+                names.setdefault("code_root", None)
 
         file_path = output_dir / output_path
         file_path.parent.mkdir(parents=True, exist_ok=True)

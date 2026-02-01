@@ -7,6 +7,8 @@ from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseM
 class TestConfig(BaseModelConfigTests):
     PACKAGE_NAME = "ttsdb_f5_tts"
     EXPECTED_MODEL_NAME = "F5-TTS"
+    EXPECTED_SAMPLE_RATE = 24000
+    EXPECTED_CODE_ROOT = "src"
 
 
 class TestModelImport(BaseModelImportTests):
@@ -21,3 +23,4 @@ class TestModelIntegration(BaseModelIntegrationTests):
     PACKAGE_NAME = "ttsdb_f5_tts"
     MODEL_CLASS_PATH = "ttsdb_f5_tts.F5TTS"
     WEIGHTS_PREPARE_HINT = "f5-tts"
+    EXPECTED_SAMPLE_RATE = 24000

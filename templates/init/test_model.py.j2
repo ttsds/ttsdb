@@ -10,11 +10,20 @@ from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseM
 class TestConfig(BaseModelConfigTests):
     PACKAGE_NAME = "{{ import_name }}"
     EXPECTED_MODEL_NAME = "{{ model_name }}"
+{%- if sample_rate %}
+    EXPECTED_SAMPLE_RATE = {{ sample_rate }}
+{%- endif %}
+{%- if code_root %}
+    EXPECTED_CODE_ROOT = "{{ code_root }}"
+{%- endif %}
 
 
 class TestModelImport(BaseModelImportTests):
     PACKAGE_NAME = "{{ import_name }}"
     MODEL_CLASS_PATH = "{{ import_name }}.{{ class_name }}"
+{%- if sample_rate %}
+    EXPECTED_SAMPLE_RATE_CONST = {{ sample_rate }}
+{%- endif %}
 
 
 # Integration tests - require model weights to be downloaded
@@ -23,3 +32,6 @@ class TestModelIntegration(BaseModelIntegrationTests):
     PACKAGE_NAME = "{{ import_name }}"
     MODEL_CLASS_PATH = "{{ import_name }}.{{ class_name }}"
     WEIGHTS_PREPARE_HINT = "{{ folder_name }}"
+{%- if sample_rate %}
+    EXPECTED_SAMPLE_RATE = {{ sample_rate }}
+{%- endif %}
