@@ -8,7 +8,7 @@ models := `ls models`
 
 # ---- Bootstrap & Development Setup ----
 
-# Install all dependencies (uv, pre-commit hooks). Run once after cloning.
+# Install all dependencies (uv, root venv, pre-commit hooks). Run once after cloning.
 bootstrap:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -21,6 +21,13 @@ bootstrap:
     else
         echo "✓ uv already installed ($(uv --version))"
     fi
+
+    # Create root venv and install builder dependencies
+    echo "Creating root venv..."
+    uv venv
+    source .venv/bin/activate
+    echo "Installing builder dependencies..."
+    uv pip install -e ".[dev]"
 
     # Install pre-commit if not present
     if ! command -v pre-commit &> /dev/null; then
@@ -35,6 +42,7 @@ bootstrap:
     pre-commit install
 
     echo "✓ Bootstrap complete!"
+    echo "  Activate root venv with: source .venv/bin/activate"
 
 # Run linters (ruff check + format) via pre-commit
 lint:
@@ -56,7 +64,7 @@ models:
 
 # Regenerate the repository README.md
 readme:
-    python builder/root_readme.py
+    .venv/bin/python builder/root_readme.py
 
 # Initialize a new model from templates
 #
@@ -64,15 +72,15 @@ readme:
 # - python_venv: concrete interpreter for local venv creation (default: .python-version)
 # - python_requires: PEP 440 specifier for supported versions (default: ==<python_venv>.*)
 init name python_venv=default_python python_requires="" torch=">=2.0.0":
-    python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}"
+    .venv/bin/python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}"
 
 # Initialize a new model (dry run)
 init-dry name python_venv=default_python python_requires="" torch=">=2.0.0":
-    python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}" --dry-run
+    .venv/bin/python builder/init_model.py "{{name}}" --python-venv {{python_venv}} --python-requires "{{python_requires}}" --hf-repo "{{hf_repo}}" --torch "{{torch}}" --dry-run
 
 # Fetch external source code for a model
 fetch model:
-    python builder/vendor.py "models/{{model}}"
+    .venv/bin/python builder/vendor.py "models/{{model}}"
 
 # Set up a model's development environment (fetch vendor, create venv, install deps)
 # Usage: just setup <model> [cpu|gpu] [torch_version] [python]
@@ -97,7 +105,7 @@ setup model device="cpu" torch_version="" python="":
     echo "Setting up {{model}} with Python ${PYTHON_VERSION} ({{device}})..."
 
     # Fetch vendor code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
-    python ../../builder/vendor.py .
+    ../../.venv/bin/python ../../builder/vendor.py .
 
     # Create venv with specified Python version (--clear to replace existing)
     echo "Creating venv with Python ${PYTHON_VERSION}..."
@@ -157,13 +165,13 @@ build-all:
 #
 # Weights: prepare/readme/upload/publish
 hf-weights-prepare model *args:
-    python builder/huggingface.py prepare "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py prepare "models/{{model}}" {{args}}
 
 hf-weights-readme model *args:
-    python builder/huggingface.py readme "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py readme "models/{{model}}" {{args}}
 
 hf-weights-upload model *args:
-    python builder/huggingface.py upload "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py upload "models/{{model}}" {{args}}
 
 hf-weights-publish model repo=hf_repo force="false" dry_run="false":
     #!/usr/bin/env bash
@@ -187,10 +195,10 @@ hf-weights-publish-all repo=hf_repo force="false" dry_run="false":
 
 # Spaces: generate/upload/publish
 hf-space-generate model *args:
-    python builder/huggingface.py space "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py space "models/{{model}}" {{args}}
 
 hf-space-upload model *args:
-    python builder/huggingface.py space-upload "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py space-upload "models/{{model}}" {{args}}
 
 hf-space-publish model repo=hf_repo *args:
     just hf-space-generate {{model}} {{args}}
@@ -203,7 +211,7 @@ hf-space-publish-all repo=hf_repo *args:
 
 # Replicate/Cog: generate / build / push / publish (mirrors hf-space and pypi)
 replicate-generate model *args:
-    python builder/huggingface.py replicate "models/{{model}}" {{args}}
+    .venv/bin/python builder/huggingface.py replicate "models/{{model}}" {{args}}
 
 replicate-build model:
     #!/usr/bin/env bash
@@ -234,7 +242,7 @@ hf-space-run model:
     # Generate space files if they do not exist
     if [ ! -f space/app.py ]; then
         echo "Generating space files..."
-        python ../../builder/huggingface.py space .
+        ../../.venv/bin/python ../../builder/huggingface.py space .
     fi
 
     # Activate the venv
@@ -255,7 +263,7 @@ pypi-build model:
     cd "models/{{model}}"
     rm -rf dist/
     # Vendor upstream code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
-    python ../../builder/vendor.py .
+    ../../.venv/bin/python ../../builder/vendor.py .
     # Build wheel only; building sdists can omit vendored code depending on source filtering.
     uv build --wheel --no-sources --verbose
 
