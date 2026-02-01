@@ -4,18 +4,7 @@ TTSDB is a monorepo of small, installable Python packages for text-to-speech (TT
 
 ## Requirements
 
-[just](https://github.com/casey/just) is the only dependency. Install it via:
-
-```bash
-# macOS
-brew install just
-
-# Linux / WSL
-curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
-
-# Or via cargo
-cargo install just
-```
+[just](https://github.com/casey/just) is the only dependency.
 
 ## Quickstart
 

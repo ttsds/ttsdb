@@ -1,4 +1,5 @@
 set dotenv-load
+set shell := ["bash", "-euc"]
 
 default_python := `cat .python-version`
 hf_repo := env_var_or_default("TTSDB_HF_REPO", "ttsds")
