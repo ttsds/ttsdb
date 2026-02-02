@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from core.src.ttsdb_core.config import ModelConfig
+from .config import ModelConfig
 
 
 def resolve_weights_path(load_path: str) -> Path:
