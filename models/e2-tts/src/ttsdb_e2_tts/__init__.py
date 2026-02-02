@@ -21,6 +21,7 @@ class E2TTS(VoiceCloningTTSBase):
     """
 
     _package_name = "ttsdb_e2_tts"
+    SAMPLE_RATE = 24000
 
     def _iter_torch_modules(self):
         """Ensure both base model and vocoder follow `.to()` / `.eval()`."""
