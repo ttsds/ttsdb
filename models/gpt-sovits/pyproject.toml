@@ -1,0 +1,123 @@
+[project]
+name = "ttsdb_gpt_sovits"
+version = "0.1.0"
+description = "GPT-SoVITS model for TTSDB"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    # Note: upstream GPT-SoVITS code is vendored under src/ttsdb_gpt_sovits/_vendor/source/
+    # via `just fetch gpt-sovits` / `just setup gpt-sovits`.
+
+    # Core ML dependencies
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "transformers>=4.43,<=4.50",
+    "pytorch-lightning>=2.4",
+    "torchmetrics<=1.5",
+
+    # Audio processing
+    "librosa==0.10.2",
+    "soundfile>=0.12.0",
+    "numpy<2.0.0",
+    "scipy>=1.10.0",
+    "ffmpeg-python",
+    "av>=11",
+
+    # Text processing
+    "langsegment-backup==0.3.5.post1",  # Language segmentation (from PyPI)
+    "pypinyin>=0.49.0",
+    "jieba>=0.42.0",
+    "jieba-fast",
+    "cn2an>=0.5.22",
+    "g2p-en>=2.1.0",
+    "pyopenjtalk>=0.4.1",
+    "sentencepiece",
+    "split-lang",
+    "fast-langdetect>=0.3.1",
+    "wordsegment",
+
+    # For v2+ Korean/Cantonese support
+    "ko-pron>=1.3",
+    "g2pk2",
+    "python-mecab-ko",
+    "ToJyutping",
+    "opencc",
+
+    # ONNX for G2PW model
+    "onnxruntime>=1.16.0",
+
+    # Model architecture dependencies
+    "rotary-embedding-torch",
+    "x-transformers",
+    "peft<0.18.0",
+
+    # Additional utilities
+    "numba>=0.59.0",
+    "einops>=0.7.0",
+    "huggingface-hub>=0.20.0",
+    "safetensors>=0.4.0",
+    "tqdm>=4.65.0",
+    "matplotlib",
+    "PyYAML",
+    "psutil",
+    "chardet",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+# v3/v4 specific dependencies (BigVGAN, etc.)
+v3 = [
+    "alias-free-torch>=0.0.6",
+    "einops>=0.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_gpt_sovits"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_gpt_sovits/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_gpt_sovits/config.yaml"
+"src/ttsdb_gpt_sovits/_vendor/source" = "ttsdb_gpt_sovits/_vendor/source"

@@ -1,0 +1,1 @@
+28, 2, 8. Znači dvije kuglice na ovom stupcu, 8 kuglice na ovom stupcu. I tu imamo jedan pomak prema toj abstrakciji jer ispod te prečke rezultata svaka kuglica ima vrijednost 1. Znači imamo 4 kuglice, to je 1. A ova gornja kuglica mi je zaboravite posebna kuglica, ona je petica.

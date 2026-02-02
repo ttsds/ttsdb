@@ -37,7 +37,7 @@ dependencies:
   # Override with: `just setup f5-tts python=3.10`
   python_venv: "3.10"
   torch: ">=2.0.0"
-  # APT packages used by Space Dockerfile and Replicate cog.yaml. Omit to use default [build-essential, git].
+  # APT packages used by Space Dockerfile. Omit to use default [build-essential, git].
   system_packages:
     - build-essential
     - git
@@ -49,15 +49,40 @@ dependencies:
     - g++-12
 code:
   url: https://github.com/SWivid/F5-TTS
-  commit: 0fe34a862c4d65d0367456536403e73824737a0f
+  commit: fc0fa67a03a047c5713ac0ca239046d85110efc6
+  # 0fe34a862c4d65d0367456536403e73824737a0f
   # Upstream repo uses a src/ layout (contains src/f5_tts).
   # We set this so setup_vendor_path() adds `<vendored_repo>/src` to sys.path.
   root: src
   license: mit
 weights:
   url: https://huggingface.co/SWivid/F5-TTS
-  commit: 4dcc16f297f2ff98a17b3726b16f5de5a5e45672
+  commit: d6bd6c3c3ec65c0a3ef25a6d3d09658c5e2817fd
   license: cc-by-nc-4.0
+  # Dependencies from other repos (downloaded to weights/<local_dir>)
+  dependencies:
+    - repo_id: charactr/vocos-mel-24khz
+      local_dir: vocos-mel-24khz
+
+# Model variants - different versions/checkpoints available.
+# Use variant="v1" when initializing F5TTS to use a specific variant.
+# Default variant is used when no variant is specified.
+#
+# Standard directory structure after download (managed by prepare_weights.py):
+#   weights/
+#   ├── shared/           # Common files (vocab, etc.) - always downloaded
+#   ├── base/             # Default variant checkpoint
+#   ├── v1/               # v1 variant checkpoint
+#   └── vocos-mel-24khz/  # Vocoder dependency
+#
+# Note: HF repo subdir mappings (e.g., F5TTS_Base -> base) are defined in
+# prepare_weights.py, not here. Config only contains what differs per variant.
+variants:
+  default: "base"
+  base: {}   # Original F5-TTS base model
+  v1:        # F5-TTS v1 base model (improved)
+    metadata:
+      release_date: 2025-03-12
 external:
   citations:
     - id: f5-tts

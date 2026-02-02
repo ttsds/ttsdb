@@ -5,7 +5,7 @@ description = "MaskGCT model for TTSDB"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "ttsdb-core>=0.1.2",
+    "ttsdb-core>=0.1.4",
     # PyTorch ecosystem
     "torch>=2.0.0",
     "torchaudio>=2.0.0",

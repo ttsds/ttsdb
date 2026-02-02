@@ -26,17 +26,15 @@ class TorToise(VoiceCloningTTSBase):
         self.tts = None
         super().__init__(*args, **kwargs)
 
-    def _resolve_weights_dir(self, load_path: str) -> Path:
-        base = Path(load_path)
-        if base.exists():
-            return base
-        from huggingface_hub import snapshot_download
-
-        return Path(snapshot_download(repo_id=load_path))
-
     def _load_model(self, load_path: str):
         # Make sure numba cache is writable (librosa/numba use cache=True in some paths).
-        weights_dir = self._resolve_weights_dir(load_path)
+        weights_dir = Path(load_path)
+        if not weights_dir.exists():
+            raise FileNotFoundError(
+                f"Model path not found: {load_path}. "
+                "Pass `model_path=` pointing at prepared weights or use `model_id=` to "
+                "let ttsdb_core download weights before loading."
+            )
         try:
             cache_dir = weights_dir / ".numba_cache"
             cache_dir.mkdir(parents=True, exist_ok=True)

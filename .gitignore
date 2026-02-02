@@ -1,13 +1,12 @@
-.python-version
-.venv
 build
 archive
 *.egg-info
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.ruff_cache/
-.uv_cache
+.*
+!.gitignore
+!.env.example
+!.pre-commit-config.yaml
 
 
 # Generated HuggingFace assets
@@ -18,5 +17,3 @@ models/**/space/
 .env
 
 *.code-workspace
-
-cog_tts

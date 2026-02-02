@@ -19,6 +19,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -425,12 +426,23 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     dependencies = config.get("dependencies", {}) or {}
     package_version = _load_pyproject_version(model_dir)
 
-    # Load test_data.yaml for examples
-    test_data_path = model_dir / "test_data.yaml"
-    test_data = {}
-    if test_data_path.exists():
-        with open(test_data_path) as f:
-            test_data = yaml.safe_load(f) or {}
+    def _load_test_data() -> dict[str, Any]:
+        # Back-compat: allow per-model test data, but prefer shared repo asset.
+        test_data_path = model_dir / "test_data.yaml"
+        if test_data_path.exists():
+            with open(test_data_path) as f:
+                return yaml.safe_load(f) or {}
+
+        repo_root = Path(__file__).parent.parent
+        shared = repo_root / "assets" / "test_data.yaml"
+        if shared.exists():
+            with open(shared) as f:
+                return yaml.safe_load(f) or {}
+
+        return {}
+
+    # Load test data for Space examples
+    test_data = _load_test_data()
 
     # Get name variants
     names = normalize_name(metadata.get("name", model_dir.name))
@@ -454,21 +466,26 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     language_choices = get_language_choices_for_gradio(language_codes)
 
     # Build examples from test_data (combining test sentences with reference audio)
-    test_sentences = test_data.get("test_sentences", {})
-    reference_audio_data = test_data.get("reference_audio", {})
+    test_sentences = test_data.get("test_sentences", {}) or {}
+    reference_audio_data = test_data.get("reference_audio", {}) or {}
     examples = []
 
     # Create examples directory for reference audio files
     examples_dir = output_dir / "examples"
     examples_dir.mkdir(parents=True, exist_ok=True)
 
-    for lang_code, sentences in test_sentences.items():
+    repo_root = Path(__file__).parent.parent
+
+    # Only build examples for languages the model declares.
+    for lang_code in language_codes:
+        sentences = test_sentences.get(lang_code, []) or []
         # Get reference audio for this language
-        ref_data = reference_audio_data.get(lang_code, {})
+        ref_data = reference_audio_data.get(lang_code, {}) or {}
         ref_url = ref_data.get("url", "")
+        ref_local = ref_data.get("path", "")
         ref_text = ref_data.get("text", "")
 
-        # Download reference audio if URL is provided
+        # Download/copy reference audio if provided
         ref_audio_path = ""
         if ref_url:
             # Determine file extension from URL
@@ -489,6 +506,25 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
             if ref_audio_local.exists():
                 # Use relative path from space root
                 ref_audio_path = f"examples/{ref_audio_filename}"
+        elif ref_local:
+            p = Path(str(ref_local))
+            if not p.is_absolute():
+                # Most commonly this is a repo-relative path like assets/reference_audio/...
+                candidate = repo_root / p
+                p = candidate if candidate.exists() else (model_dir / p)
+            if p.exists():
+                ext = p.suffix or ".wav"
+                ref_audio_filename = f"ref_{lang_code}{ext}"
+                ref_audio_local = examples_dir / ref_audio_filename
+                if not ref_audio_local.exists():
+                    try:
+                        import shutil
+
+                        shutil.copyfile(p, ref_audio_local)
+                    except Exception as e:
+                        print(f"Warning: Failed to copy reference audio for {lang_code}: {e}")
+                if ref_audio_local.exists():
+                    ref_audio_path = f"examples/{ref_audio_filename}"
 
         for sentence in sentences:
             examples.append(
@@ -500,7 +536,7 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
                 }
             )
 
-    # System packages for apt (used by Space Dockerfile and Replicate cog.yaml)
+    # System packages for apt (used by Space Dockerfile)
     system_packages = dependencies.get("system_packages") or ["build-essential", "git"]
 
     # Get PyPI package name/version if specified (for PyPI-only packages)
@@ -513,6 +549,13 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
     else:
         pypi_package_name = names["import_name"]
         pypi_package_version = package_version
+
+    # Get variants information
+    variants_config = config.get("variants", {})
+    available_variants = (
+        [k for k in variants_config.keys() if k != "default"] if variants_config else []
+    )
+    default_variant = variants_config.get("default") if variants_config else None
 
     # Prepare template context
     context = {
@@ -538,6 +581,8 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
         "citations": external.get("citations", []),
         "paper_urls": external.get("paper_urls", []),
         "examples": examples,
+        "variants": available_variants,
+        "default_variant": default_variant,
     }
 
     # Generate all space files
@@ -551,91 +596,6 @@ def generate_space(model_dir: Path, output_dir: Path | None = None) -> Path:
         )
 
         output_name = template_name.replace(".j2", "")
-        output_path = output_dir / output_name
-        output_path.write_text(content)
-        print(f"Generated {output_path}")
-
-    return output_dir
-
-
-def _default_model_id_from_weights_url(url: str) -> str:
-    """Derive HuggingFace repo_id from weights.url (e.g. amphion/MaskGCT)."""
-    if not url or "huggingface.co/" not in url:
-        return ""
-    return url.rstrip("/").split("huggingface.co/")[-1].split("/tree/")[0].strip("/")
-
-
-def generate_replicate(model_dir: Path, output_dir: Path | None = None) -> Path:
-    """Generate Replicate/Cog files (cog.yaml, predict.py, requirements.txt).
-
-    Uses the same config-driven system_packages and python version as the Space
-    Dockerfile. predict.py is a thin wrapper around the ttsdb_<model> package.
-
-    Args:
-        model_dir: Path to the model directory containing config.yaml.
-        output_dir: Output directory. Defaults to model_dir/replicate/.
-
-    Returns:
-        Path to the output directory (model_dir/replicate/ by default).
-    """
-    config = load_config(model_dir)
-    metadata = config.get("metadata", {})
-    dependencies = config.get("dependencies", {}) or {}
-    weights = config.get("weights", {})
-    package_version = _load_pyproject_version(model_dir)
-    names = normalize_name(metadata.get("name", model_dir.name))
-    system_packages = dependencies.get("system_packages") or ["build-essential", "git"]
-    python_version = str(dependencies.get("python_venv") or dependencies.get("python") or "3.10")
-    weights_url = weights.get("url", "")
-    default_model_id = _default_model_id_from_weights_url(weights_url) or ""
-
-    # Get PyPI package name/version if specified (for PyPI-only packages)
-    package_config = config.get("package", {})
-    pypi_config = package_config.get("pypi")
-    has_external_pypi = pypi_config and isinstance(pypi_config, dict)
-    if has_external_pypi:
-        pypi_package_name = pypi_config.get("name", names["import_name"])
-        pypi_package_version = pypi_config.get("version", package_version)
-    else:
-        pypi_package_name = names["import_name"]
-        pypi_package_version = package_version
-
-    if output_dir is None:
-        output_dir = Path(model_dir).resolve() / "replicate"
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    repo_root = Path(__file__).parent.parent
-    templates_dir = repo_root / "templates" / "replicate"
-    env = Environment(
-        loader=FileSystemLoader(str(templates_dir)),
-        keep_trailing_newline=True,
-    )
-
-    context = {
-        **names,
-        "system_packages": system_packages,
-        "python_version": python_version,
-        "package_version": package_version,
-        "pypi_package_name": pypi_package_name,
-        "pypi_package_version": pypi_package_version,
-        "has_external_pypi": has_external_pypi,
-        "weights_url": weights_url,
-        "default_model_id": default_model_id,
-    }
-
-    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-    for template_name, output_name in [
-        ("cog.yaml.j2", "cog.yaml"),
-        ("predict.py.j2", "predict.py"),
-        ("requirements.txt.j2", "requirements.txt"),
-    ]:
-        template = env.get_template(template_name)
-        content = template.render(
-            **context,
-            generated_at=generated_at,
-            generated_from_template=f"templates/replicate/{template_name}",
-        )
         output_path = output_dir / output_name
         output_path.write_text(content)
         print(f"Generated {output_path}")
@@ -855,20 +815,6 @@ Examples:
         "--dry-run", "-n", action="store_true", help="Show what would be done without uploading"
     )
 
-    # replicate subcommand (generate Replicate/Cog files)
-    replicate_parser = subparsers.add_parser(
-        "replicate",
-        help="Generate Replicate/Cog files (cog.yaml, predict.py, requirements.txt)",
-    )
-    replicate_parser.add_argument("model_dir", type=Path, help="Model directory")
-    replicate_parser.add_argument(
-        "--output",
-        "-o",
-        type=Path,
-        default=None,
-        help="Output directory (default: <model_dir>/replicate/)",
-    )
-
     args = parser.parse_args()
 
     if args.command == "prepare":
@@ -881,8 +827,6 @@ Examples:
         generate_space(args.model_dir, args.output)
     elif args.command == "space-upload":
         upload_space(args.model_dir, args.repo, args.dry_run)
-    elif args.command == "replicate":
-        generate_replicate(args.model_dir, args.output)
 
 
 if __name__ == "__main__":

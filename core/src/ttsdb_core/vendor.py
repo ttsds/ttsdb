@@ -22,6 +22,31 @@ def _get_code_root(config: ModelConfig) -> str | None:
     return None
 
 
+def _get_extra_paths(config: ModelConfig) -> list[str]:
+    """Get code.extra_paths from config, handling nested access.
+
+    Extra paths are additional subdirectories within the vendor source
+    that should be added to sys.path. This is useful when vendored code
+    has internal imports that expect certain directories to be on the path.
+
+    Example config.yaml:
+        code:
+          url: https://github.com/example/repo
+          root: .
+          extra_paths:
+            - subdir  # Adds _vendor/source/subdir to sys.path
+    """
+    try:
+        code = config.get("code")
+        if code and isinstance(code, dict):
+            extra = code.get("extra_paths")
+            if extra and isinstance(extra, list):
+                return [str(p) for p in extra]
+    except (KeyError, TypeError):
+        pass
+    return []
+
+
 def setup_vendor_path(
     package_name: str,
     vendor_dirname: str = "_vendor",
@@ -30,7 +55,8 @@ def setup_vendor_path(
     """Add vendored source to sys.path for imports.
 
     Reads `code.root` from the package's config.yaml to determine the
-    importable root within the vendored source.
+    importable root within the vendored source. Also reads `code.extra_paths`
+    for additional subdirectories to add to sys.path.
 
     The vendor directory is expected to be inside the package directory:
     <package>/_vendor/source/
@@ -44,7 +70,7 @@ def setup_vendor_path(
         source_dirname: Name of the source subdirectory (default: "source").
 
     Returns:
-        Path to the directory added to sys.path.
+        Path to the main vendor directory added to sys.path.
 
     Example:
         >>> # In models/bark/src/ttsdb_bark/__init__.py
@@ -53,10 +79,18 @@ def setup_vendor_path(
         >>>
         >>> # Now you can import from the vendored bark code
         >>> from bark.generation import generate_text_semantic
+
+    Config example with extra_paths:
+        code:
+          url: https://github.com/example/repo
+          root: .
+          extra_paths:
+            - subpackage  # Also adds _vendor/source/subpackage to sys.path
     """
     # Load config from package
     config = ModelConfig.from_package(package_name)
     code_root = _get_code_root(config)
+    extra_paths = _get_extra_paths(config)
 
     # Find package location - vendor is inside the package directory
     import importlib
@@ -64,9 +98,11 @@ def setup_vendor_path(
     package = importlib.import_module(package_name)
     package_dir = Path(package.__file__).parent
 
-    # Vendor path: <package_dir>/_vendor/source/
-    vendor_path = package_dir / vendor_dirname / source_dirname
+    # Base vendor path: <package_dir>/_vendor/source/
+    base_vendor_path = package_dir / vendor_dirname / source_dirname
 
+    # Main vendor path (with code.root applied)
+    vendor_path = base_vendor_path
     if code_root and code_root != ".":
         vendor_path = vendor_path / code_root
 
@@ -74,6 +110,13 @@ def setup_vendor_path(
 
     if vendor_path_str not in sys.path:
         sys.path.insert(0, vendor_path_str)
+
+    # Add extra paths (relative to base vendor path, not code.root)
+    for extra in extra_paths:
+        extra_full = base_vendor_path / extra
+        extra_str = str(extra_full)
+        if extra_full.exists() and extra_str not in sys.path:
+            sys.path.insert(0, extra_str)
 
     return vendor_path
 

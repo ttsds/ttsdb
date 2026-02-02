@@ -43,13 +43,30 @@ def make_test_data_fixture(model_root: Path, *, scope: str = "class"):
     import pytest
     import yaml
 
+    def _find_test_data_path() -> Path | None:
+        # Back-compat: allow per-model `test_data.yaml`.
+        local = model_root / "test_data.yaml"
+        if local.exists():
+            return local
+
+        # Preferred: shared repo asset at `assets/test_data.yaml`.
+        for parent in (model_root, *model_root.parents):
+            candidate = parent / "assets" / "test_data.yaml"
+            if candidate.exists():
+                return candidate
+
+        return None
+
     @pytest.fixture(scope=scope)
     def test_data() -> dict[str, Any]:
         """Loaded `test_data.yaml`."""
 
-        test_data_path = model_root / "test_data.yaml"
-        if not test_data_path.exists():
-            pytest.skip(f"Test data not found at {test_data_path}")
+        test_data_path = _find_test_data_path()
+        if not test_data_path:
+            pytest.skip(
+                "Test data not found. Expected either model_root/test_data.yaml "
+                "or repo assets/test_data.yaml"
+            )
         with open(test_data_path) as f:
             data = yaml.safe_load(f) or {}
         return data
@@ -61,15 +78,54 @@ def make_reference_audio_fixture(*, scope: str = "class"):
     import pytest
 
     @pytest.fixture(scope=scope)
-    def reference_audio(test_data: dict[str, Any], tmp_path_factory) -> dict[str, dict[str, str]]:
-        """Download reference audio clips described by `test_data.yaml`."""
+    def reference_audio(
+        test_data: dict[str, Any], tmp_path_factory, request
+    ) -> dict[str, dict[str, str]]:
+        """Resolve reference audio clips described by `test_data.yaml`.
+
+        Supports either:
+        - `url`: remote URL downloaded into a temp directory
+        - `path`: local path (absolute or relative to pytest rootdir)
+        """
 
         ref_data = (test_data or {}).get("reference_audio", {}) or {}
         base = tmp_path_factory.mktemp("reference_audio")
 
         result: dict[str, dict[str, str]] = {}
         for lang, ref_info in ref_data.items():
-            url = (ref_info or {}).get("url")
+            info = ref_info or {}
+
+            local_path = info.get("path")
+            if local_path:
+                p = Path(str(local_path))
+                if not p.is_absolute():
+                    # Prefer resolving relative paths from the pytest rootdir,
+                    # since model tests often run with cwd set to the model dir.
+                    root = Path(str(request.config.rootpath))
+                    candidate = root / p
+                    if candidate.exists():
+                        p = candidate
+                    else:
+                        # If tests are running from a nested root (e.g. models/<pkg>),
+                        # walk up to find the repo-level assets path.
+                        for parent in (root, *root.parents):
+                            candidate = parent / p
+                            if candidate.exists():
+                                p = candidate
+                                break
+                if not p.exists():
+                    raise FileNotFoundError(
+                        f"Reference audio path for {lang!r} not found: {p} "
+                        f"(from test_data.yaml path={local_path!r})"
+                    )
+                result[str(lang)] = {
+                    "path": str(p),
+                    "text": info.get("text", "") or "",
+                    "language": str(lang),
+                }
+                continue
+
+            url = info.get("url")
             if not url:
                 continue
 
@@ -77,9 +133,9 @@ def make_reference_audio_fixture(*, scope: str = "class"):
             audio_path = base / f"reference_{lang}.{ext}"
             urllib.request.urlretrieve(url, audio_path)
 
-            result[lang] = {
+            result[str(lang)] = {
                 "path": str(audio_path),
-                "text": (ref_info or {}).get("text", "") or "",
+                "text": info.get("text", "") or "",
                 "language": str(lang),
             }
 

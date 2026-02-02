@@ -1,0 +1,316 @@
+# Shared test data for TTSDB integration tests
+#
+# - `test_sentences`: prompts per ISO 639-3 language code
+# - `reference_audio`: bundled reference clips (local `path`) + transcript (`text`)
+#
+# Model tests filter these by each model/variant supported languages.
+
+reference_audio:
+  ara:
+    path: assets/reference_audio/daisy/ara.wav
+    text: وفقاً للاتفاق وقف إطلاق النار فإن عملية تبادل الأسرى بين فصائل المقاومة
+      في غزة وإسرائيل
+  ben:
+    path: assets/reference_audio/daisy/ben.wav
+    text: আমাকে অন্যের সাথে একমত হতে হবে তাহলে গণতন্ত্র আমি যদি অন্যের সাথে দ্বিমত
+      করি তাহলে গণতন্ত্র না এটি কেমন গণতন্ত্র কোন গণতন্ত্রের
+  bul:
+    path: assets/reference_audio/daisy/bul.wav
+    text: Ако утре излизате навън, носете си чадър.
+  cat:
+    path: assets/reference_audio/daisy/cat.wav
+    text: Eduard Fernández recull al Festival de Sant Sebastià el Premi Nacional de
+      Cinematografia que atorga el govern espanyol. L'actor català reivindica la cultura
+      com a eina indispensable per a la democràcia.
+  ces:
+    path: assets/reference_audio/daisy/ces.wav
+    text: Nenávistivci či Fialově vládě, doporučím vám sociální sítě Koalice Spolu
+      nebo Petra Fialy. Čím víc toho napíšete, tím více mojí pozornosti si nezískáte.
+      Je to takhle jednoduché. Ne všude to funguje tak, že ten nejhlasitější dostane
+      nejvíc prostoru. Tady máte smůlu.
+  cmn:
+    path: assets/reference_audio/daisy/cmn.wav
+    text: 养儿防老父母恩这句话有些太温柔了，说直接一点，不当爹我都不知道我自己是一个多么烂的儿子。我曾憎恨他们对我的生活指手画脚，我厌恶他们没完没了地说教，我觉得我才是这个世界上最聪明、最无所不能、最特立独行的那一个。我以为自己翅膀硬了，是因为我觉得我不会老，哪怕胖一点也只是为了更沉。
+  dan:
+    path: assets/reference_audio/daisy/dan.wav
+    text: Nej, jeg er med. Jeg synes, det er en virkelig spændende samtale, og den
+      førte i en retning, jeg ikke var forberedt på alligevel. Så!
+  deu:
+    path: assets/reference_audio/daisy/deu.wav
+    text: Wussten Sie das eigentlich schon zu Zeiten, als Sie noch in der Ampel waren?
+  ell:
+    path: assets/reference_audio/daisy/ell.wav
+    text: Και όφειλαν να είναι εδώ, να ακούσουν τον εθνικό ύμνο.
+  eng:
+    path: assets/reference_audio/daisy/eng.wav
+    text: This is Learning English from the News, our podcast about the news headlines.
+  est:
+    path: assets/reference_audio/daisy/est.wav
+    text: Seal on osaliselt kindlasti taga energiahindade tõus, palkade tõus ja need
+      on ka kõik need, mis on siis mõjutatud otse toote hinnas.
+  fas:
+    path: assets/reference_audio/daisy/fas.wav
+    text: همزمان نخستین جلسه دادگاه مردمی برای زنان افغانستان در شهر مادرید اسپانیا
+      در حال برگزاری است. هدف ما بررسی نقض حقوق زنان بعد از بازگشت طالبان به قدرت
+      است. رأی این دادگاه الزام‌آور نیست اما یافته‌هایش می‌تواند دادگاه‌های قانونی
+  fin:
+    path: assets/reference_audio/daisy/fin.wav
+    text: Minulla oli ajatus, että minun täytyy hirveän tehokkaasti viettää tätä vapaa-aikaa
+      ja valistaa itseäni.
+  fra:
+    path: assets/reference_audio/daisy/fra.wav
+    text: Alors, comme vous l'avez dit, aujourd'hui, on a enclenché ce qu'on appelle
+      l'article 4. L'article 4, c'est ce qui permet justement des consultations, des
+      échanges, et puis du soutien, de la réassurance à nos partenaires. Ce qui est
+      certain, c'est que nous devons encore faire plus pour renforcer.
+  guj:
+    path: assets/reference_audio/daisy/guj.wav
+    text: ભારતીય ઉત્પાદનો પર ટેરીફનું તરત કરનારા ટ્રમ્પને રશિયાએ આપ્યો મોટો જટકો
+  heb:
+    path: assets/reference_audio/daisy/heb.wav
+    text: אחרי המלחמה יזם הגיע ואמר שהפרויקט הפך להפסדי בגלל ירידה במחירי הדירות.
+  hin:
+    path: assets/reference_audio/daisy/hin.wav
+    text: क्योंकि नया MY फैक्टर उत्तर प्रदेश में क्या मायावती और योगी MY बनेगा और
+      ये सर्कबंदी इसलिए हो रही है क्योंकि आज की रैली में मायावती ने उत्तर प्रदेश के
+      मुख्यमंत्री योगी आदित्यनाथ और उनकी सरकार पर बहुत सॉफ्ट नजर आईं जबकि अखिलेश यादव
+      और उनकी समाजवादी पार्टी के खिलाफ उन्होंने चारों तरफ से मोर्चा ही खोल दिया पहले
+      ये सुनिए कि मायावती ने योगी सरकार की क्यों और किसलिए तारीफ की।
+  hrv:
+    path: assets/reference_audio/daisy/hrv.wav
+    text: 28, 2, 8. Znači dvije kuglice na ovom stupcu, 8 kuglice na ovom stupcu.
+      I tu imamo jedan pomak prema toj abstrakciji jer ispod te prečke rezultata svaka
+      kuglica ima vrijednost 1. Znači imamo 4 kuglice, to je 1. A ova gornja kuglica
+      mi je zaboravite posebna kuglica, ona je petica.
+  hun:
+    path: assets/reference_audio/daisy/hun.wav
+    text: Önmagában véve is nevetséges. Tehát, ha valaki dolgozott már ezen a kontinensen
+      vagy Észak-Amerikában webfejlesztőkkel, és dolgozott másfélnél többel.
+  ind:
+    path: assets/reference_audio/daisy/ind.wav
+    text: Mereka mengaku kalau aksi karaoke dilakukan saat mencoba perangkat Smart
+      TV yang baru diterima sekolah dari pemerintah pusat. Smart TV itu kan buat pembelajaran
+      interaktif, bukan buat karaoke eksklusif.
+  ita:
+    path: assets/reference_audio/daisy/ita.wav
+    text: Questo è un quadro internazionale più sconfortante possibile, parliamoci
+      chiaro.
+  jpn:
+    path: assets/reference_audio/daisy/jpn.wav
+    text: 男性は膝に軽傷を負いました。
+  kan:
+    path: assets/reference_audio/daisy/kan.wav
+    text: ರಾತ್ರಿಯಲ್ಲಿ ಓಪನ್ ಮಾಡಿದಾರೆ
+  kor:
+    path: assets/reference_audio/daisy/kor.wav
+    text: 기종 원동기 면허 이상을 보유해야만 탈 수 있습니다. 하지만 킥보드 대여 앱에 나이와 운전면허 인증 절차가 없는 경우가 많았고.
+  lav:
+    path: assets/reference_audio/daisy/lav.wav
+    text: The most important is to be ourselves honest.
+  lit:
+    path: assets/reference_audio/daisy/lit.wav
+    text: Geras argumentas, iš tikrųjų, nes išsakė, tai aš manau, kur skiriasi mūsų
+      diskusija, tai yra grėsmės suvokimas, tai yra vienas sako, kad nereikėtų dar
+      kelti grėsmės, nes dabartinis kelimas grėsmės gali iš tikrųjų sukelti grėsmę
+      jų teigimo.
+  mal:
+    path: assets/reference_audio/daisy/mal.wav
+    text: ഒരു വാഹനം മാത്രമാണ് വിട്ടുനൽകാൻ നടൻ കോടതിൽ ആവശ്യപ്പെട്ടത്. എന്തുകൊണ്ടാണ്
+      സമാനക്കാരെയും മറ്റു വാഹനങ്ങളുടെ കാര്യത്തിൽ ഇല്ലാത്തതെന്നും കസ്റ്റംസ് എതിർവാദം
+      മുന്നയിച്ചു. ഹർജിയിൽ വിശദമായ വാദം കേട്ട കോടതി, കസ്റ്റംസ് അഡീഷണൽ കമ്മീഷണർ ദുൽഖറിന്റെ
+      ആവശ്യം പരിഗണിക്കണമെന്ന് ഇടക്കാല ഉത്തരവിട്ടു.
+  mar:
+    path: assets/reference_audio/daisy/mar.wav
+    text: शिंदे साहेबाचा आशीर्वादाने आपण सगळ्यांना वेगवेगळ्या पदावर बसवून काम करू
+  msa:
+    path: assets/reference_audio/daisy/msa.wav
+    text: Tak perlu saya nak pening-pening. Okey, awak nak cakap apa, it's your voice.
+      Awak cakap apa-apa, tapi kalau boleh...
+  nld:
+    path: assets/reference_audio/daisy/nld.wav
+    text: Maar eigenlijk is het nergens veilig.
+  nor:
+    path: assets/reference_audio/daisy/nor.wav
+    text: Nå er det en sånn deilig forventningspuls. Nå logger vi av, og så går vi
+      inn i en parallell verden.
+  pan:
+    path: assets/reference_audio/daisy/pan.wav
+    text: ਐਸ ਚੀਜ਼ ਦੀ ਪੁਸ਼ਟੀ ਕੀਤੀ ਹੈ ਬਾਰਾਂ ਦਿਨਾਂ ਤੋਂ ਲਗਾਤਾਰ ਰਾਜਵੀਰ ਜਵਾਂਦਾ ਫੋਰਟਿਸ ਹਸਪਤਾਲ
+      ਵਿੱਚ ਵੈਂਟੀਲੇਟਰ ਤੇ ਸਨ ਅਤੇ ਲਗਾਤਾਰ ਉਹਨਾਂ ਨੂੰ ਲੈ ਕੇ ਹਾਲੇ ਤੱਕ ਕੋਈ ਪੁਸ਼ਟੀ ਨਹੀਂ ਕੀਤੀ
+      ਗਈ ਸੀ ਪਰ ਹੁਣ ਗੁਰਪ੍ਰੀਤ ਘੁਗੀ ਨੇ ਪੁਸ਼ਟੀ ਕੀਤੀ ਹੈ।
+  pol:
+    path: assets/reference_audio/daisy/pol.wav
+    text: Ten projekt został rozpoczęty w 2021 roku, wtedy dyrektor generalny podpisał
+      list intencyjny z partnerem prywatnym z firmą z Danii.
+  spa:
+    path: assets/reference_audio/daisy/spa.wav
+    text: El gobernador de Texas debería preocuparse de Texas y no meterse en mis
+      asuntos, dijo el alcalde Brandon Johnson.
+  tam:
+    path: assets/reference_audio/daisy/tam.wav
+    text: எகிப்தில் மூன்று நாட்கள் தீவிர மறைமுகப் பேச்சுவார்த்தைகளுக்குப் பிறகு இஸ்ரேலும்
+      ஹமாசும் எங்கள் அமைதி ஒப்பந்தத்தின் முதல் கட்டத்தில் கையழுத்திட்டன என ட்ரம்ப்
+      தனது த்ரூத் சோஷியல் பக்கத்தில் தெரிவித்தார். இஸ்ரயேலுக்கான ஒரு சிறப்பு நாள்
+      என இந்த ஒப்பந்தம் குறித்து இஸ்ரயேல் பிரதமர் பெஞ்ஜமின் நெதன்யாகு குறிப்பிட்டுள்ளார்
+  tel:
+    path: assets/reference_audio/daisy/tel.wav
+    text: పునుగులు వేసిన వెంటనే కలిపేకుండా కాస్త వేగి పైకి తేలిన తర్వాత రెండు వైపులా
+      కూడా తిప్పుకొంటూ మంచిగా క్రిస్పీగా గోల్డెన్ షేడ్ వచ్చేంత వరకు బాగా ఫ్రై చేయండి.
+      ఫ్రై చేసుకున్న పునుగులను పక్కకు తీసి మక్కా.
+  tha:
+    path: assets/reference_audio/daisy/tha.wav
+    text: โลกมันเรียกร้องมากขึ้นทุกวัน สู้ตายมาก ถูกไหมฮะ เดี๋ยวไอ้นั่นก็เข้มคนขึ้นเรื่อยๆ
+      เสรษฐกิจก็ไม่อีกดี เงินท้องก็หายาก แต่ในขณะเดียวกัน บริษัทเราก็ยังอยากเติบโต
+      ทำไงอ่ะ
+  vie:
+    path: assets/reference_audio/daisy/vie.wav
+    text: Đến nay, Thư viện Sách nói Hướng Dương đã sản xuất hơn 3.000 đầu sách.
+  yue:
+    path: assets/reference_audio/daisy/yue.wav
+    text: 起碼你能買到一個多位，萬一再破頂的時候可以坐得舒服一點。
+  zho:
+    path: assets/reference_audio/daisy/zho.wav
+    text: 中国企业的第一个大语言模型是文心一言，百度推出了ERNIE 5.0，千帆的4.0，所以一个由中国公司构建的人工智能的基础设施系统。
+test_sentences:
+  ara:
+  - description: Academia-themed, phonetically broad test sentence
+    text: في مختبر الجامعة، كتب الأستاذ بحثًا ظريفًا عن الفوضى ثم نسي مفاتيح المكتب.
+  ben:
+  - description: Academia-themed, phonetically broad test sentence
+    text: বিশ্ববিদ্যালয়ের ল্যাবে অধ্যাপক মজার প্রবন্ধ লিখে কফি ছড়িয়ে ফেললেন।
+  bul:
+  - description: Academia-themed, phonetically broad test sentence
+    text: В университета професорът набързо защити теза, после разля кафе върху ръкописа.
+  cat:
+  - description: Academia-themed, phonetically broad test sentence
+    text: A la universitat, el professor va citar un vell paper i va perdre la clau
+      del laboratori.
+  ces:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Na fakultě profesor zvláštně žongloval s tezí a pak vylil kávu na poznámky.
+  cmn:
+  - description: Academia-themed, phonetically broad test sentence
+    text: 在大学实验室里，教授写了一篇滑稽论文，却把咖啡洒在数据上。
+  dan:
+  - description: Academia-themed, phonetically broad test sentence
+    text: På universitetet skrev professoren en skør afhandling og spildte kaffe på
+      figurerne.
+  deu:
+  - description: Academia-themed, phonetically broad test sentence
+    text: An der Uni verfasste der Professor eine schräge These und verschüttete Kaffee
+      auf die Zitate.
+  ell:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Στο πανεπιστήμιο, ο καθηγητής έγραψε μια αστεία διατριβή και έχυσε καφέ
+      στις σημειώσεις.
+  eng:
+  - description: Academia-themed, phonetically broad test sentence
+    text: With tenure, Suzie'd have all the more leisure for yachting, but her publications
+      are no good.
+  est:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Ülikoolis kirjutas professor vingerpussi artikli ja ajas kohvi märkmetele
+      laiali.
+  fas:
+  - description: Academia-themed, phonetically broad test sentence
+    text: در دانشگاه، استاد مقاله‌ای بامزه نوشت و بعد قهوه را روی یادداشت‌ها ریخت.
+  fin:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Yliopistolla professori kirjoitti hupaisan väitöksen ja kaatoi kahvin muistiinpanoille.
+  fra:
+  - description: Academia-themed, phonetically broad test sentence
+    text: À l’université, le professeur rédigea une thèse cocasse puis renversa son
+      café sur les notes.
+  guj:
+  - description: Academia-themed, phonetically broad test sentence
+    text: યુનિવર્સિટીના લેબમાં પ્રોફેસરે રમૂજી લેખ લખ્યો અને પછી કૉફી નોંધો પર ઢાળી
+      દીધી.
+  heb:
+  - description: Academia-themed, phonetically broad test sentence
+    text: באוניברסיטה המרצה כתב תזה מצחיקה ואז שפך קפה על ההערות.
+  hin:
+  - description: Academia-themed, phonetically broad test sentence
+    text: विश्वविद्यालय की लैब में प्रोफ़ेसर ने मज़ेदार शोधपत्र लिखा और फिर कॉफ़ी
+      नोट्स पर गिरा दी।
+  hrv:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Na sveučilištu je profesor napisao smiješnu tezu pa prolio kavu po bilješkama.
+  hun:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Az egyetemen a professzor furcsa tézist írt, majd kávét löttyintett a jegyzetekre.
+  ind:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Di kampus, profesor menulis tesis kocak lalu menumpahkan kopi ke catatan.
+  ita:
+  - description: Academia-themed, phonetically broad test sentence
+    text: All’università il professore scrisse una tesi buffa e rovesciò il caffè
+      sugli appunti.
+  jpn:
+  - description: Academia-themed, phonetically broad test sentence
+    text: 大学の研究室で教授は妙な論文を書き、コーヒーをデータにこぼした。
+  kan:
+  - description: Academia-themed, phonetically broad test sentence
+    text: ವಿಶ್ವವಿದ್ಯಾಲಯದ ಲ್ಯಾಬ್‌ನಲ್ಲಿ ಪ್ರಾಧ್ಯಾಪಕರು ಹಾಸ್ಯಾಸ್ಪದ ಲೇಖನ ಬರೆದು, ನಂತರ ಕಾಫಿ
+      ಟಿಪ್ಪಣಿಗಳ ಮೇಲೆ ಸುರಿಸಿದರು.
+  kor:
+  - description: Academia-themed, phonetically broad test sentence
+    text: 대학 연구실에서 교수는 엉뚱한 논문을 쓰고 커피를 노트에 쏟았다.
+  lav:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Universitātē profesors uzrakstīja jocīgu disertāciju un izlēja kafiju uz
+      piezīmēm.
+  lit:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Universitete profesorius parašė juokingą disertaciją ir išpylė kavą ant
+      užrašų.
+  mal:
+  - description: Academia-themed, phonetically broad test sentence
+    text: സർവകലാശാല ലാബിൽ പ്രൊഫസർ തമാശയായ പ്രബന്ധം എഴുതി, പിന്നെ കാപ്പി കുറിപ്പുകളിൽ
+      ഒഴിച്ചു.
+  mar:
+  - description: Academia-themed, phonetically broad test sentence
+    text: विद्यापीठाच्या प्रयोगशाळेत प्राध्यापकांनी गंमतीदार शोधपत्र लिहिले आणि मग
+      कॉफी टिपण्यांवर सांडली.
+  msa:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Di universiti, profesor menulis tesis lucu lalu menumpahkan kopi pada nota.
+  nld:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Op de universiteit schreef de professor een gekke these en morste koffie
+      op de notities.
+  nor:
+  - description: Academia-themed, phonetically broad test sentence
+    text: På universitetet skrev professoren en merkelig avhandling og sølte kaffe
+      på notatene.
+  pan:
+  - description: Academia-themed, phonetically broad test sentence
+    text: ਯੂਨੀਵਰਸਿਟੀ ਦੀ ਲੈਬ ਵਿੱਚ ਪ੍ਰੋਫੈਸਰ ਨੇ ਮਜ਼ੇਦਾਰ ਲੇਖ ਲਿਖਿਆ ਤੇ ਫਿਰ ਕੌਫੀ ਨੋਟਾਂ ‘ਤੇ
+      ਢੋਲ੍ਹ ਦਿੱਤੀ।
+  pol:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Na uczelni profesor napisał dziwną tezę i rozlał kawę na notatki.
+  spa:
+  - description: Academia-themed, phonetically broad test sentence
+    text: En la universidad, el profesor escribió una tesis rara y derramó café sobre
+      las notas.
+  tam:
+  - description: Academia-themed, phonetically broad test sentence
+    text: பல்கலைக்கழக ஆய்வகத்தில் பேராசிரியர் நகைச்சுவையான ஆய்வுக் கட்டுரை எழுதி,
+      பிறகு குறிப்புகளில் காபி சிந்தினார்.
+  tel:
+  - description: Academia-themed, phonetically broad test sentence
+    text: విశ్వవిద్యాలయ ల్యాబ్‌లో ప్రొఫెసర్ సరదా పేపర్ రాసి, తర్వాత నోట్స్‌పై కాఫీ
+      చిందించాడు.
+  tha:
+  - description: Academia-themed, phonetically broad test sentence
+    text: ที่มหาวิทยาลัย อาจารย์เขียนวิทยานิพนธ์ขำๆ แล้วทำกาแฟหกใส่โน้ต.
+  vie:
+  - description: Academia-themed, phonetically broad test sentence
+    text: Ở trường đại học, giáo sư viết một luận văn hài hước rồi làm đổ cà phê lên
+      ghi chú.
+  yue:
+  - description: Academia-themed, phonetically broad test sentence
+    text: 喺大學實驗室，教授寫咗篇好搞笑嘅論文，仲將咖啡瀉喺筆記上。
+  zho:
+  - description: Academia-themed, phonetically broad test sentence
+    text: 在大學實驗室裡，教授寫了一篇滑稽論文，卻把咖啡灑在筆記上。

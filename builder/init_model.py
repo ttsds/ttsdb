@@ -101,11 +101,11 @@ def init_model(
     templates = [
         ("pyproject.toml.j2", "pyproject.toml"),
         ("config.yaml.j2", "config.yaml"),
-        ("test_data.yaml.j2", "test_data.yaml"),
         ("README.md.j2", "README.md"),
         (".gitignore.j2", ".gitignore"),
         ("__init__.py.j2", f"src/{names['import_name']}/__init__.py"),
         ("vendor_init.py.j2", f"src/{names['import_name']}/_vendor/__init__.py"),
+        ("prepare_weights.py.j2", "scripts/prepare_weights.py"),
         ("conftest.py.j2", "tests/conftest.py"),
         ("test_model.py.j2", "tests/test_model.py"),
     ]

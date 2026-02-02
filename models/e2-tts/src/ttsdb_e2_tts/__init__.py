@@ -54,15 +54,11 @@ class E2TTS(VoiceCloningTTSBase):
 
         base = Path(load_path)
         if not base.exists():
-            try:
-                from huggingface_hub import snapshot_download
-            except Exception as e:
-                raise FileNotFoundError(
-                    f"Model path not found: {load_path} and huggingface_hub is unavailable. "
-                    "Pass `model_path=` pointing at prepared weights (recommended), or install "
-                    "`huggingface_hub` to allow `model_id=` downloads."
-                ) from e
-            base = Path(snapshot_download(repo_id=load_path))
+            raise FileNotFoundError(
+                f"Model path not found: {load_path}. "
+                "Pass `model_path=` pointing at prepared weights or use `model_id=` to "
+                "let ttsdb_core download weights before loading."
+            )
 
         # Numba (pulled in by librosa) tries to write its cache next to site-packages by
         # default, which may be read-only in some environments (like Spaces containers).
@@ -124,17 +120,11 @@ class E2TTS(VoiceCloningTTSBase):
             )
 
         # Vocos vocoder (Space uses HF `charactr/vocos-mel-24khz`).
-        # Support offline environments by allowing a local vocoder path:
-        # - env `TTSDB_VOCOS_PATH` pointing to a directory containing config.yaml + pytorch_model.bin
-        # - or a vendored copy under `<weights>/vocos-mel-24khz/`
-        vocos_local = os.environ.get("TTSDB_VOCOS_PATH")
+        # We expect a local copy under `<weights>/shared/vocos-mel-24khz/`.
         vocos_dir = None
-        if vocos_local:
-            vocos_dir = Path(vocos_local)
-        else:
-            candidate = base / "vocos-mel-24khz"
-            if candidate.exists():
-                vocos_dir = candidate
+        shared_candidate = base / "shared" / "vocos-mel-24khz"
+        if shared_candidate.exists():
+            vocos_dir = shared_candidate
 
         try:
             if vocos_dir is not None:
@@ -151,13 +141,13 @@ class E2TTS(VoiceCloningTTSBase):
 
                 pytest.skip(
                     "Vocos vocoder weights unavailable. "
-                    "Set TTSDB_VOCOS_PATH to a local `vocos-mel-24khz/` directory "
+                    "Ensure `weights/shared/vocos-mel-24khz/` is present "
                     "(with config.yaml + pytorch_model.bin), or run with network access."
                 )
             except Exception:
                 raise RuntimeError(
                     "Failed to load Vocos vocoder. "
-                    "Set TTSDB_VOCOS_PATH or ensure network access for "
+                    "Ensure `weights/shared/vocos-mel-24khz/` is present or allow network access for "
                     "`charactr/vocos-mel-24khz`."
                 ) from e
         return base_model

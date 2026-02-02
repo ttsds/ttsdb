@@ -18,6 +18,7 @@ except Exception:  # pragma: no cover
 
 from .config import ModelConfig
 from .vendor import get_vendor_path, setup_vendor_path, vendor_context
+from .weights import find_checkpoint, get_variant_checkpoint_dir, resolve_weights_path
 
 AudioInput = str | Path | np.ndarray | torch.Tensor
 AudioOutput = tuple[np.ndarray, int]
@@ -30,6 +31,9 @@ __all__ = [
     "setup_vendor_path",
     "get_vendor_path",
     "vendor_context",
+    "find_checkpoint",
+    "get_variant_checkpoint_dir",
+    "resolve_weights_path",
 ]
 
 
@@ -54,6 +58,7 @@ class VoiceCloningTTSBase(ABC):
         model_path: str | Path | None = None,
         model_id: str | None = None,
         device: str | torch.device | None = None,
+        variant: str | None = None,
         **kwargs,
     ):
         """Initialize the voice cloning TTS model.
@@ -64,6 +69,8 @@ class VoiceCloningTTSBase(ABC):
                      If provided and model_path is None, loads from HuggingFace Hub.
             device: Device to run the model on ('cpu', 'cuda', 'cuda:0', etc.).
                    If None, uses 'cuda' if available, else 'cpu'.
+            variant: Model variant to use (e.g., "v1", "base"). If None, uses the
+                    default variant specified in config, or base config if no variants.
             **kwargs: Additional model-specific initialization parameters.
         """
         if model_path is None and model_id is None:
@@ -76,17 +83,25 @@ class VoiceCloningTTSBase(ABC):
         self.tokenizer = None
         self.processor = None
         self.init_kwargs = kwargs
+        self._variant = variant
 
-        # Load model config from package
+        # Load model config from package (with variant if specified)
         self.model_config: ModelConfig | None = None
         if self._package_name:
             try:
-                self.model_config = ModelConfig.from_package(self._package_name)
+                self.model_config = ModelConfig.from_package(self._package_name, variant=variant)
             except Exception:
                 pass  # Config loading is optional
 
         # Load model components
         self._load_model_components()
+
+    @property
+    def variant(self) -> str | None:
+        """Currently loaded variant name."""
+        if self.model_config is not None:
+            return self.model_config.variant
+        return self._variant
 
     def _setup_device(self, device: str | torch.device | None) -> torch.device:
         """Set up the computation device.
@@ -101,12 +116,22 @@ class VoiceCloningTTSBase(ABC):
             device = "cuda" if torch.cuda.is_available() else "cpu"
         return torch.device(device)
 
+    def _resolve_model_path(self) -> Path:
+        """Resolve a local path for model weights."""
+        if self.model_path is not None:
+            return self.model_path
+
+        if self.model_id is None:
+            raise ValueError("Either model_path or model_id must be provided")
+
+        return resolve_weights_path(self.model_id)
+
     def _load_model_components(self):
         """Load model, tokenizer, and processor components."""
-        load_path = str(self.model_path) if self.model_path else self.model_id
+        load_path = self._resolve_model_path()
 
         # Load model (implemented by subclasses)
-        self.model = self._load_model(load_path)
+        self.model = self._load_model(str(load_path))
         for m in self._iter_torch_modules():
             # Only torch modules are moved/eval'ed. This allows wrappers that return
             # non-Module objects (e.g. service objects) while still supporting
@@ -117,7 +142,7 @@ class VoiceCloningTTSBase(ABC):
         # Try to load tokenizer and processor if they exist (optional helpers)
         if AutoTokenizer is not None:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(load_path)
+                self.tokenizer = AutoTokenizer.from_pretrained(str(load_path))
             except (OSError, ValueError, TypeError):
                 self.tokenizer = None
         else:
@@ -125,7 +150,7 @@ class VoiceCloningTTSBase(ABC):
 
         if AutoProcessor is not None:
             try:
-                self.processor = AutoProcessor.from_pretrained(load_path)
+                self.processor = AutoProcessor.from_pretrained(str(load_path))
             except (OSError, ValueError, TypeError):
                 self.processor = None
         else:

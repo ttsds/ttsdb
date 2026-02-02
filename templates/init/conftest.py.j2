@@ -7,12 +7,14 @@ import sys
 from pathlib import Path
 
 from ttsdb_core.testing import (
+    add_variant_option,
     configure_integration_marker,
     make_audio_examples_dir_fixture,
     make_reference_audio_fixture,
     make_test_data_fixture,
     make_weights_path_fixture,
     skip_integration_by_default,
+    write_integration_result,
 )
 
 MODEL_ROOT = Path(__file__).resolve().parents[1]
@@ -21,12 +23,20 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 
+def pytest_addoption(parser):
+    add_variant_option(parser)
+
+
 def pytest_configure(config):
     configure_integration_marker(config)
 
 
 def pytest_collection_modifyitems(config, items):
     skip_integration_by_default(config, items)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    write_integration_result(MODEL_ROOT, session, exitstatus)
 
 
 # Fixtures (bound to this model's root directory)

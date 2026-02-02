@@ -1,0 +1,33 @@
+{
+  "model_id": "gpt-sovits",
+  "passed": true,
+  "timestamp": "2026-02-02T07:38:52Z",
+  "variants_tested": [
+    "v1",
+    "v2",
+    "v3",
+    "v4"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 18,
+  "artifacts": [
+    "v1/eng_test_001.wav",
+    "v1/jpn_test_001.wav",
+    "v1/zho_test_001.wav",
+    "v2/eng_test_001.wav",
+    "v2/jpn_test_001.wav",
+    "v2/kor_test_001.wav",
+    "v2/yue_test_001.wav",
+    "v2/zho_test_001.wav",
+    "v3/eng_test_001.wav",
+    "v3/jpn_test_001.wav",
+    "v3/kor_test_001.wav",
+    "v3/yue_test_001.wav",
+    "v3/zho_test_001.wav",
+    "v4/eng_test_001.wav",
+    "v4/jpn_test_001.wav",
+    "v4/kor_test_001.wav",
+    "v4/yue_test_001.wav",
+    "v4/zho_test_001.wav"
+  ]
+}

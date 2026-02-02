@@ -9,6 +9,8 @@ class TestConfig(BaseModelConfigTests):
     EXPECTED_MODEL_NAME = "F5-TTS"
     EXPECTED_SAMPLE_RATE = 24000
     EXPECTED_CODE_ROOT = "src"
+    EXPECTED_VARIANTS = ["base", "v1"]
+    EXPECTED_DEFAULT_VARIANT = "base"
 
 
 class TestModelImport(BaseModelImportTests):

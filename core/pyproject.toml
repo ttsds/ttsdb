@@ -1,6 +1,6 @@
 [project]
 name = "ttsdb-core"
-version = "0.1.3"
+version = "0.1.4"
 description = "Core package for TTSDB systems - base classes for voice cloning TTS models."
 readme = "README.md"
 requires-python = ">=3.8"

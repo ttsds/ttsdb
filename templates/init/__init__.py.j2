@@ -21,7 +21,8 @@ class {{ class_name }}(VoiceCloningTTSBase):
     _package_name = "{{ import_name }}"
 
     def _load_model(self, load_path):
-        # TODO: Load the model from load_path (local path or HuggingFace ID)
+        # TODO: Load the model from load_path (local weights directory).
+        # ttsdb_core resolves HuggingFace model_id to a local path before calling this.
         raise NotImplementedError("_load_model must be implemented")
 
     def _synthesize(self, text, reference_audio, reference_sample_rate, **kwargs):

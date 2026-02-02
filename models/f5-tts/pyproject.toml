@@ -1,11 +1,11 @@
 [project]
 name = "ttsdb_f5_tts"
-version = "0.1.2"
+version = "0.1.4"
 description = "F5-TTS model for TTSDB"
 readme = "README.md"
 requires-python = ">=3.10,<=3.14"
 dependencies = [
-    "ttsdb-core>=0.1.2",
+    "ttsdb-core>=0.1.4",
     # Note: upstream F5-TTS code is vendored under src/ttsdb_f5_tts/_vendor/source/
     # via `just fetch f5-tts` / `just setup f5-tts`.
     "einops",
@@ -27,6 +27,7 @@ dependencies = [
     "numpy<=1.26.4",
     "pydub",
     "pypinyin",
+    "rjieba",
     "safetensors",
     "soundfile",
     "tomli",

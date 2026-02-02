@@ -1,5 +1,15 @@
 # TTSDB
 
+<!-- BEGIN BADGES -->
+[![ttsdb-core](https://img.shields.io/pypi/v/ttsdb-core)](https://pypi.org/project/ttsdb-core/)
+[![integration](https://img.shields.io/badge/integration-passing-green)](status/README.md)
+[![e2-tts](https://img.shields.io/badge/e2--tts-passing-green)](models/e2-tts)
+[![f5-tts](https://img.shields.io/badge/f5--tts-passing-green)](models/f5-tts)
+[![gpt-sovits](https://img.shields.io/badge/gpt--sovits-passing-green)](models/gpt-sovits)
+[![maskgct](https://img.shields.io/badge/maskgct-passing-green)](models/maskgct)
+[![tortoise](https://img.shields.io/badge/tortoise-passing-green)](models/tortoise)
+<!-- END BADGES -->
+
 TTSDB is a monorepo of small, installable Python packages for text-to-speech (TTS) models.
 
 ## Requirements

@@ -15,7 +15,7 @@ ignore = [
   "E501", # line length handled by formatter/line-length
   "B027", # we use an empty abstract __exit__ method to not force implementing it
   "UP036", # we use differing python versions for different models
-  "B008", # we use Input from cog for replicate/cog
+  "B008", # we use Input from cog for cog_tts
 ]
 
 [tool.ruff.lint.per-file-ignores]

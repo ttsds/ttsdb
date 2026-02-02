@@ -38,7 +38,7 @@ dependencies:
   # Override with: `just setup {{ folder_name }} python=3.11`
   python_venv: "{{ python_venv }}"
   torch: "{{ torch_version }}"
-  # APT packages used by Space Dockerfile and Replicate cog.yaml. Omit to use default [build-essential, git].
+  # APT packages used by Space Dockerfile. Omit to use default [build-essential, git].
   system_packages:
     - build-essential
     - git
@@ -67,6 +67,19 @@ weights:
   url: # TODO: HuggingFace model URL
   commit: # TODO: Commit hash
   license: # TODO: License identifier
+# Model variants - different versions/checkpoints available.
+# Use variant="v1" when initializing the model to use a specific variant.
+# Default variant is used when no variant is specified.
+#
+# Note: static HF repo subdir mappings and allow_patterns are defined in
+# prepare_weights.py, not here. Keep variants focused on identifiers and
+# metadata overrides (e.g., release_date).
+# variants:
+#   default: "base"
+#   base: {}  # Base variant
+#   v1:
+#     metadata:
+#       release_date: 2025-03-12
 external:
   citations:
     - id: {{ folder_name }}

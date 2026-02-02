@@ -3,77 +3,89 @@
 
 Downloads weights from HuggingFace into the `weights/` directory and writes a
 small model config file so the runtime can discover model hyperparameters.
+
+Standard directory structure after download:
+    weights/
+    ├── shared/           # Common files (vocab, deps) - always downloaded
+    │   └── vocos-mel-24khz/  # Vocoder dependency
 """
 
-import json
+import sys
 from pathlib import Path
 
 import yaml
-from huggingface_hub import snapshot_download
 
-# Paths relative to this script
+ROOT_DIR = Path(__file__).resolve().parents[3]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+# =============================================================================
+# Model-specific definitions (static knowledge about this model's structure)
+# =============================================================================
+
+# Patterns to always download (in addition to shared/*)
+SHARED_PATTERNS: list[str] = ["*.md"]
+
+# Model architecture config (written to weights dir for runtime)
+MODEL_CONFIG = {
+    "dim": 1024,
+    "depth": 24,
+    "heads": 16,
+    "ff_mult": 4,
+}
+MODEL_CONFIG_FILENAME = "e2_model_config.json"
+
+# =============================================================================
+# Paths
+# =============================================================================
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 MODEL_DIR = SCRIPT_DIR.parent
 CONFIG_PATH = MODEL_DIR / "config.yaml"
-# We follow the same convention as builder.get_huggingface_dir
 WEIGHTS_DIR = MODEL_DIR / "weights"
-E2_CONFIG_FILENAME = "e2_model_config.json"
-VOCOS_REPO_ID = "charactr/vocos-mel-24khz"
-VOCOS_DIRNAME = "vocos-mel-24khz"
+
+
+# =============================================================================
+# Main logic
+# =============================================================================
+
+
+def load_config() -> dict:
+    with open(CONFIG_PATH) as f:
+        return yaml.safe_load(f)
 
 
 def main():
-    with open(CONFIG_PATH) as f:
-        config = yaml.safe_load(f)
+    # Import core weight utilities
+    from builder.prepare_weights import (
+        download_dependencies_from_config,
+        download_model_weights,
+        get_weights_config,
+        write_model_config,
+    )
 
-    weights = config.get("weights", {})
-    url = weights.get("url")
-    commit = weights.get("commit")
-    if not url or "huggingface.co/" not in url:
-        raise ValueError("config.yaml weights.url must be a HuggingFace URL")
+    config = load_config()
 
-    repo_id = url.rstrip("/").split("huggingface.co/")[-1].split("/tree/")[0].strip("/")
+    # Get repo info from config
+    repo_id, commit = get_weights_config(config)
 
-    WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    print(f"Downloading weights from {repo_id}...")
-    snapshot_download(
+    # Download main weights (no variants for E2-TTS)
+    # variant=None means download everything, but shared/* is always included
+    download_model_weights(
         repo_id=repo_id,
-        revision=commit,
-        local_dir=WEIGHTS_DIR,
-        local_dir_use_symlinks=False,
+        weights_dir=WEIGHTS_DIR,
+        commit=commit,
+        variant=None,  # No variants - download all
+        shared_patterns=SHARED_PATTERNS,
     )
 
-    # Download vocoder for offline inference (mirrors Space usage of Vocos.from_pretrained).
-    # This allows running without network by pointing TTSDB_VOCOS_PATH at this folder or
-    # relying on the default `<weights>/vocos-mel-24khz/` fallback.
-    vocos_dir = WEIGHTS_DIR / VOCOS_DIRNAME
-    vocos_config = vocos_dir / "config.yaml"
-    vocos_bin = vocos_dir / "pytorch_model.bin"
-    if not (vocos_config.exists() and vocos_bin.exists()):
-        print(f"Downloading vocoder from {VOCOS_REPO_ID}...")
-        snapshot_download(
-            repo_id=VOCOS_REPO_ID,
-            local_dir=vocos_dir,
-            local_dir_use_symlinks=False,
-        )
-        print(f"✓ Vocos ready in {vocos_dir}")
-    else:
-        print(f"Vocos already present at {vocos_dir}")
+    # Download dependencies (vocoder)
+    download_dependencies_from_config(config, WEIGHTS_DIR)
 
-    # Write a small model config into weights dir so runtime and uploads include it
-    model_config = dict(
-        dim=1024,
-        depth=24,
-        heads=16,
-        ff_mult=4,
-    )
-    config_path = WEIGHTS_DIR / E2_CONFIG_FILENAME
-    with open(config_path, "w") as f:
-        json.dump(model_config, f, indent=2)
-    print(f"Wrote {E2_CONFIG_FILENAME} -> {config_path}")
+    # Write model architecture config
+    write_model_config(MODEL_CONFIG, WEIGHTS_DIR / MODEL_CONFIG_FILENAME)
 
-    print(f"✓ Weights and config ready in {WEIGHTS_DIR}")
+    print(f"✓ E2-TTS weights ready in {WEIGHTS_DIR}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """F5-TTS voice cloning TTS model."""
 
+import json
 import os
-import re
 import tempfile
 from pathlib import Path
 
@@ -53,6 +53,7 @@ class F5TTS(VoiceCloningTTSBase):
         **kwargs,
     ):
         self._weights_base: str | None = None
+        self._mel_spec_type: str | None = None
         self.vocoder = None
         super().__init__(model_path=model_path, model_id=model_id, device=device, **kwargs)
 
@@ -74,29 +75,13 @@ class F5TTS(VoiceCloningTTSBase):
     def _load_model(self, load_path: str):
         """Load F5-TTS model following the upstream Space-style pipeline."""
 
-        # Import from vendored upstream repo (mirrors the Space implementation).
-        try:
-            from ema_pytorch import EMA
-            from f5_tts.model import CFM, DiT
-            from f5_tts.model.utils import get_tokenizer
-            from vocos import Vocos
-        except Exception as e:
-            raise RuntimeError(
-                "Failed to import vendored F5-TTS dependencies. "
-                "Make sure you ran `just fetch f5-tts` and installed the model deps."
-            ) from e
-
         base = Path(load_path)
         if not base.exists():
-            try:
-                from huggingface_hub import snapshot_download
-            except Exception as e:
-                raise FileNotFoundError(
-                    f"Model path not found: {load_path} and huggingface_hub is unavailable. "
-                    "Pass `model_path=` pointing at prepared weights (recommended), or install "
-                    "`huggingface_hub` to allow `model_id=` downloads."
-                ) from e
-            base = Path(snapshot_download(repo_id=load_path))
+            raise FileNotFoundError(
+                f"Model path not found: {load_path}. "
+                "Pass `model_path=` pointing at prepared weights or use `model_id=` to "
+                "let ttsdb_core download weights before loading."
+            )
 
         self._weights_base = str(base)
 
@@ -110,95 +95,71 @@ class F5TTS(VoiceCloningTTSBase):
         except Exception:
             pass
 
-        # Match the Space defaults
-        target_sample_rate = 24000
-        n_mel_channels = 100
-        hop_length = 256
-        ode_method = "euler"
+        # Get variant directory name
+        # Standard structure: weights/{variant}/ (e.g., weights/base/, weights/alt/)
+        # prepare_weights.py renames HF subdirs to variant names for consistency
+        variant = self.model_config.variant if self.model_config else None
 
-        ckpt_step = int(self.init_kwargs.get("ckpt_step", 1200000))
-        exp_name = str(self.init_kwargs.get("exp_name", "F5TTS_Base"))
-        ckpt_path = base / exp_name / f"model_{ckpt_step}.pt"
-        if not ckpt_path.exists():
-            raise FileNotFoundError(f"Expected checkpoint not found: {ckpt_path}")
+        exp_name = str(self.init_kwargs.get("exp_name") or variant or "base")
 
-        # Tokenizer (Space uses Emilia_ZH_EN pinyin vocab)
-        vocab_char_map, vocab_size = get_tokenizer("Emilia_ZH_EN", "pinyin")
+        exp_dir = base / exp_name
+        model_cfg = self._load_variant_model_config(exp_dir)
 
-        model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
-        model_cfg.update(self.init_kwargs.get("model_cfg", {}))
+        # Use the same loader for all variants.
+        return self._load_model_common(base, exp_name, model_cfg)
 
-        device = self.device
+    def _load_variant_model_config(self, exp_dir: Path) -> dict:
+        config_path = exp_dir / "f5_model_config.json"
+        if not config_path.exists():
+            raise FileNotFoundError(f"Missing model config at {config_path}")
+        with open(config_path) as f:
+            return json.load(f)
 
-        checkpoint = torch.load(str(ckpt_path), map_location=device)
-        base_model = CFM(
-            transformer=DiT(**model_cfg, text_num_embeds=vocab_size, mel_dim=n_mel_channels),
-            mel_spec_kwargs=dict(
-                target_sample_rate=target_sample_rate,
-                n_mel_channels=n_mel_channels,
-                hop_length=hop_length,
-            ),
-            odeint_kwargs=dict(method=ode_method),
-            vocab_char_map=vocab_char_map,
-        ).to(device)
+    def _load_model_common(self, base: Path, exp_name: str, model_cfg: dict):
+        """Load F5-TTS model using the upstream inference pipeline."""
+        try:
+            from f5_tts.infer.utils_infer import load_model, load_vocoder
+        except Exception as e:
+            raise RuntimeError("Failed to import F5-TTS dependencies (utils_infer).") from e
 
-        ema_model = EMA(base_model, include_online_model=False).to(device)
-        if isinstance(checkpoint, dict) and "ema_model_state_dict" in checkpoint:
-            # Patch for upstream checkpoint backward-compatibility.
-            # Some checkpoints include mel-spectrogram buffers that are not registered in the
-            # current model definition (see upstream `utils_infer.load_checkpoint`).
-            ema_sd = dict(checkpoint["ema_model_state_dict"])
-            for k in [
-                "ema_model.mel_spec.mel_stft.mel_scale.fb",
-                "ema_model.mel_spec.mel_stft.spectrogram.window",
-            ]:
-                ema_sd.pop(k, None)
-            ema_model.load_state_dict(ema_sd, strict=False)
-            ema_model.copy_params_from_ema_to_model()
-        else:
-            raise RuntimeError(
-                f"Unexpected checkpoint format in {ckpt_path} (missing 'ema_model_state_dict')."
+        from f5_tts.model import DiT
+        from ttsdb_core import find_checkpoint
+
+        model_cls = DiT
+        mel_spec_type = model_cfg.get("mel_spec_type", "vocos")
+        self._mel_spec_type = str(self.init_kwargs.get("mel_spec_type", mel_spec_type))
+
+        exp_dir = base / exp_name
+        ckpt_path = find_checkpoint(exp_dir)
+        if ckpt_path is None:
+            raise FileNotFoundError(
+                f"No checkpoint found in {exp_dir}. Expected model_*.pt or model_*.safetensors"
             )
 
-        # Vocos vocoder (Space uses HF `charactr/vocos-mel-24khz`).
-        # Support offline environments by allowing a local vocoder path:
-        # - env `TTSDB_VOCOS_PATH` pointing to a directory containing config.yaml + pytorch_model.bin
-        # - or a vendored copy under `<weights>/vocos-mel-24khz/`
-        vocos_local = os.environ.get("TTSDB_VOCOS_PATH")
         vocos_dir = None
-        if vocos_local:
-            vocos_dir = Path(vocos_local)
-        else:
-            candidate = base / "vocos-mel-24khz"
-            if candidate.exists():
-                vocos_dir = candidate
+        candidate = base / "shared" / "vocos-mel-24khz"
+        if candidate.exists():
+            vocos_dir = candidate
 
-        try:
-            if vocos_dir is not None:
-                voc = Vocos.from_hparams(str(vocos_dir / "config.yaml"))
-                sd = torch.load(str(vocos_dir / "pytorch_model.bin"), map_location="cpu")
-                voc.load_state_dict(sd)
-                self.vocoder = voc.eval().to(device)
-            else:
-                self.vocoder = Vocos.from_pretrained("charactr/vocos-mel-24khz").to(device)
-        except Exception as e:
-            # During pytest integration runs, prefer skipping rather than failing hard when offline.
-            try:
-                import pytest  # type: ignore
+        self.vocoder = load_vocoder(
+            self._mel_spec_type,
+            vocos_dir is not None,
+            str(vocos_dir) if vocos_dir is not None else "",
+            self.device,
+        )
 
-                pytest.skip(
-                    "Vocos vocoder weights unavailable. "
-                    "Set TTSDB_VOCOS_PATH to a local `vocos-mel-24khz/` directory "
-                    "(with config.yaml + pytorch_model.bin), or run with network access."
-                )
-            except Exception:
-                raise RuntimeError(
-                    "Failed to load Vocos vocoder. "
-                    "Set TTSDB_VOCOS_PATH or ensure network access for "
-                    "`charactr/vocos-mel-24khz`."
-                ) from e
-
-        return base_model
+        model_cfg_no_mel_spec = model_cfg.copy()
+        model_cfg_no_mel_spec.pop("mel_spec_type", None)
+        self.model = load_model(
+            model_cls,
+            model_cfg_no_mel_spec,
+            str(ckpt_path),
+            mel_spec_type=self._mel_spec_type,
+            ode_method="euler",
+            use_ema=True,
+            device=str(self.device),
+        )
+        return self.model
 
     def _synthesize(
         self,
@@ -220,101 +181,64 @@ class F5TTS(VoiceCloningTTSBase):
         Returns:
             Tuple of (audio_array, sample_rate).
         """
+        return self._synthesize_common(
+            text=text,
+            reference_audio=reference_audio,
+            reference_sample_rate=reference_sample_rate,
+            text_reference=text_reference,
+            **kwargs,
+        )
+
+    def _synthesize_common(
+        self,
+        text: str,
+        reference_audio: np.ndarray,
+        reference_sample_rate: int,
+        text_reference: str = "",
+        **kwargs,
+    ) -> AudioOutput:
         if not text_reference:
             raise ValueError("text_reference is required for F5-TTS")
 
-        # Mirror the Space inference logic as closely as possible.
         try:
-            import torchaudio
-            from f5_tts.model.utils import convert_char_to_pinyin
+            from f5_tts.infer.utils_infer import infer_process, preprocess_ref_audio_text
         except Exception as e:
-            raise RuntimeError("Missing F5-TTS runtime deps (torchaudio / vendored utils).") from e
+            raise RuntimeError("Missing F5-TTS runtime deps (utils_infer).") from e
 
-        if not text_reference or not str(text_reference).strip():
-            raise ValueError("text_reference is required for F5-TTS")
-
-        target_sample_rate = 24000
-        hop_length = 256
-        target_rms = float(self.init_kwargs.get("target_rms", 0.1))
-        nfe_step = int(self.init_kwargs.get("nfe_step", 32))
-        cfg_strength = float(self.init_kwargs.get("cfg_strength", 2.0))
-        sway_sampling_coef = float(self.init_kwargs.get("sway_sampling_coef", -1.0))
-        speed = float(self.init_kwargs.get("speed", 1.0))
-        remove_silence = bool(self.init_kwargs.get("remove_silence", False))
-
-        # Raw audio -> torch (1, n)
-        audio = torch.tensor(reference_audio, dtype=torch.float32).unsqueeze(0)
-        rms = torch.sqrt(torch.mean(torch.square(audio)))
-        if rms < target_rms:
-            audio = audio * (target_rms / rms)
-        if reference_sample_rate != target_sample_rate:
-            resampler = torchaudio.transforms.Resample(reference_sample_rate, target_sample_rate)
-            audio = resampler(audio)
-
-        # Clip to 15s like the Space UI (rough equivalent)
-        max_samples = int(15 * target_sample_rate)
-        if audio.shape[-1] > max_samples:
-            audio = audio[..., :max_samples]
-
-        audio = audio.to(self.device)
-
-        # Simple chunking close to txtsplit(100,150)
-        chunks: list[str] = []
-        remaining = text.strip()
-        while remaining:
-            if len(remaining) <= 150:
-                chunks.append(remaining)
-                break
-            cut = 150
-            for i in range(150, 80, -1):
-                if remaining[i - 1] in ".!?;:，。！？；：":
-                    cut = i
-                    break
-            chunks.append(remaining[:cut].strip())
-            remaining = remaining[cut:].strip()
-
-        results: list[np.ndarray] = []
-        zh_pause_punc = r"。，、；：？！"
-        ref_text = str(text_reference)
-
-        for chunk in chunks:
-            text_list = [ref_text + chunk]
-            final_text_list = convert_char_to_pinyin(text_list)
-
-            ref_audio_len = audio.shape[-1] // hop_length
-            ref_text_len = len(ref_text) + len(re.findall(zh_pause_punc, ref_text))
-            gen_text_len = len(chunk) + len(re.findall(zh_pause_punc, chunk))
-            duration = ref_audio_len + int(
-                ref_audio_len / max(ref_text_len, 1) * gen_text_len / speed
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+        ref_file = tmp_path
+        try:
+            sf.write(tmp_path, reference_audio, reference_sample_rate)
+            ref_file, ref_text = preprocess_ref_audio_text(
+                tmp_path, text_reference, show_info=lambda *_args, **_kwargs: None
             )
 
-            with torch.inference_mode():
-                generated, _ = self.model.sample(
-                    cond=audio,
-                    text=final_text_list,
-                    duration=duration,
-                    steps=nfe_step,
-                    cfg_strength=cfg_strength,
-                    sway_sampling_coef=sway_sampling_coef,
-                )
+            target_rms = float(self.init_kwargs.get("target_rms", 0.1))
+            nfe_step = int(self.init_kwargs.get("nfe_step", 32))
+            cfg_strength = float(self.init_kwargs.get("cfg_strength", 2.0))
+            sway_sampling_coef = float(self.init_kwargs.get("sway_sampling_coef", -1.0))
+            speed = float(self.init_kwargs.get("speed", 1.0))
 
-                generated = generated[:, ref_audio_len:, :]
-                mel = generated.permute(0, 2, 1)
-                wave = self.vocoder.decode(mel).squeeze(0)
-                if rms < target_rms:
-                    wave = wave * (rms / target_rms)
-
-            results.append(wave.detach().cpu().numpy())
-
-        out = np.concatenate(results) if results else np.zeros((0,), dtype=np.float32)
-
-        if remove_silence and out.size:
-            import librosa
-
-            non_silent_intervals = librosa.effects.split(out, top_db=30)
-            out2 = np.array([], dtype=out.dtype)
-            for start, end in non_silent_intervals:
-                out2 = np.concatenate([out2, out[start:end]])
-            out = out2
-
-        return out.astype(np.float32), target_sample_rate
+            wave, sr, _ = infer_process(
+                ref_file,
+                ref_text,
+                text,
+                self.model,
+                self.vocoder,
+                mel_spec_type=self._mel_spec_type or "vocos",
+                target_rms=target_rms,
+                nfe_step=nfe_step,
+                cfg_strength=cfg_strength,
+                sway_sampling_coef=sway_sampling_coef,
+                speed=speed,
+                device=str(self.device),
+            )
+            return wave.astype(np.float32), int(sr)
+        finally:
+            # If preprocessing returned a different cached path, clean up the temp file.
+            if ref_file != tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass

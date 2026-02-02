@@ -28,7 +28,7 @@ LANGUAGES: dict[str, Language] = {
     # Major world languages
     "eng": Language("eng", "English", "English", "en"),
     "zho": Language("zho", "Chinese", "中文", "zh"),
-    "cmn": Language("cmn", "Mandarin Chinese", "普通话"),  # More specific
+    "cmn": Language("cmn", "Mandarin Chinese", "普通话"),
     "yue": Language("yue", "Cantonese", "粵語"),
     "jpn": Language("jpn", "Japanese", "日本語", "ja"),
     "kor": Language("kor", "Korean", "한국어", "ko"),

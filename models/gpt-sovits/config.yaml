@@ -1,0 +1,156 @@
+metadata:
+  name: "GPT-SoVITS"
+  id: "gpt-sovits"
+  description: |
+    GPT-SoVITS is a powerful few-shot voice conversion and text-to-speech system by [RVC-Boss](https://github.com/RVC-Boss).
+    It achieves high-quality voice cloning with just 1 minute of training data, supporting zero-shot and few-shot TTS
+    with cross-lingual synthesis capabilities.
+  training_data:
+    - id: internal
+      name: Internal Dataset
+      hours: 2000  # v1 baseline
+  languages:
+    - eng
+    - zho
+    - jpn
+  num_parameters: 167  # 90M GPT + 77M SoVITS for v1/v2
+  release_date: 2024-01-16
+  target_representation:
+    - Codec
+  sample_rate: 32000  # v1/v2 output
+  architecture:
+    - Autoregressive
+    - Non-Autoregressive
+    - GPT
+    - VITS
+dependencies:
+  python: ">=3.10,<3.12"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - build-essential
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - g++-12
+    - espeak-ng
+code:
+  url: https://github.com/RVC-Boss/GPT-SoVITS
+  commit: c767f0b83b998e996a4d230d86da575a03f54a3f
+  root: .
+  license: mit
+  # GPT-SoVITS has internal imports like `import utils` that expect
+  # the GPT_SoVITS subdirectory to be on sys.path
+  extra_paths:
+    - GPT_SoVITS
+weights:
+  url: https://huggingface.co/lj1995/GPT-SoVITS
+  commit: 021ac208db367e69e1982d66d793d0a2af53bfb8  # Default to v1
+  license: mit
+  dependencies:
+    # Chinese HuBERT for audio feature extraction
+    - repo_id: TencentGameMate/chinese-hubert-base
+      local_dir: chinese-hubert-base
+    # Chinese BERT for text features
+    - repo_id: hfl/chinese-roberta-wwm-ext-large
+      local_dir: chinese-roberta-wwm-ext-large
+
+# Model variants - different versions/checkpoints available.
+# v1: Original release (Jan 2024) - Chinese, Japanese, English
+# v2: Extended release (Aug 2024) - +Korean, Cantonese, 5k hours training
+# v3: DiT-based s2 (2024/2025) - 7k hours, improved zero-shot, 24k output
+# v4: Custom vocoder (2025) - fixes v3 artifacts, native 48k output
+variants:
+  default: "v1"
+  v1:
+    metadata:
+      release_date: 2024-01-16
+      training_data:
+        - id: internal
+          name: Internal Dataset
+          hours: 2000
+      languages:
+        - eng
+        - zho
+        - jpn
+      num_parameters: 167
+      sample_rate: 32000
+  v2:
+    metadata:
+      release_date: 2024-08-07
+      training_data:
+        - id: internal
+          name: Internal Dataset
+          hours: 5000
+      languages:
+        - eng
+        - zho
+        - jpn
+        - kor
+        - yue  # Cantonese
+      num_parameters: 167
+      sample_rate: 32000
+  v3:
+    metadata:
+      release_date: 2024-12-01
+      training_data:
+        - id: internal
+          name: Internal Dataset
+          hours: 7000
+      languages:
+        - eng
+        - zho
+        - jpn
+        - kor
+        - yue
+      num_parameters: 407  # 330M GPT + 77M SoVITS
+      sample_rate: 24000
+      architecture:
+        - Autoregressive
+        - Flow Matching
+        - Diffusion Transformer
+        - GPT
+  v4:
+    metadata:
+      release_date: 2025-01-01
+      training_data:
+        - id: internal
+          name: Internal Dataset
+          hours: 7000
+      languages:
+        - eng
+        - zho
+        - jpn
+        - kor
+        - yue
+      num_parameters: 407
+      sample_rate: 48000
+      architecture:
+        - Autoregressive
+        - Flow Matching
+        - Diffusion Transformer
+        - GPT
+
+external:
+  citations:
+    - id: gptsovits
+      text: >
+        @misc{RVCBoss2024,
+          author = {RVC-Boss},
+          title = {GPT-SoVITS: 1 min voice data can also be used to train a good TTS model},
+          year = {2024},
+          publisher = {GitHub},
+          journal = {GitHub repository},
+          howpublished = {\url{https://github.com/RVC-Boss/GPT-SoVITS}},
+        }
+  paper_urls: []
+api:
+  parameters:
+    text: text
+    language: language
+    speaker_reference: speaker_reference
+    text_reference: text_reference

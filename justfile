@@ -3,7 +3,6 @@ set shell := ["bash", "-euc"]
 
 default_python := `cat .python-version`
 hf_repo := env_var_or_default("TTSDB_HF_REPO", "ttsds")
-replicate_repo := env_var_or_default("TTSDB_REPLICATE_REPO", "ttsds")
 
 models := `ls models`
 
@@ -48,6 +47,13 @@ bootstrap:
 # Run linters (ruff check + format) via pre-commit
 lint:
     pre-commit run --all-files
+
+# Run unit tests for the core package
+test-core:
+        source .venv/bin/activate && \
+            uv pip install "torch" "torchaudio" --index-url https://download.pytorch.org/whl/cpu && \
+            uv pip install -e core/ && \
+            pytest core/tests/ -v -rs
 
 # Run unit tests in CI for all models (setup + test in each model's venv)
 test-ci:
@@ -144,11 +150,26 @@ setup model device="cpu" torch_version="" python="":
 
 # Run unit tests for a model
 test model:
-    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -rs
+    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ../../core/ && uv pip install -e ".[dev]" && pytest tests/ -v -rs
 
 # Run integration tests for a model (requires weights: just hf-weights-prepare <model>)
+# Writes models/<model>/integration_result.json on success/failure.
 test-integration model:
-    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ".[dev]" && pytest tests/ -v -rs -m integration
+    cd models/{{model}} && source .venv/bin/activate && uv pip install -e ../../core/ && uv pip install -e ".[dev]" && pytest tests/ -v -rs -m integration
+
+# Run integration tests for all models, then aggregate status and update README badges.
+test-integration-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for m in $(ls models); do
+        just test-integration "$m" || true
+    done
+    just status-integration --readme
+
+# Aggregate models/*/integration_result.json into status/ and optionally update README badges.
+# Usage: just status-integration  (aggregate only) or  just status-integration --readme
+status-integration *args:
+    .venv/bin/python builder/aggregate_integration_status.py {{args}}
 
 # Build a specific model
 build model:
@@ -210,30 +231,6 @@ hf-space-publish-all repo=hf_repo *args:
         just hf-space-publish $m --repo {{repo}} {{args}}; \
     done
 
-# Replicate/Cog: generate / build / push / publish (mirrors hf-space and pypi)
-replicate-generate model *args:
-    .venv/bin/python builder/huggingface.py replicate "models/{{model}}" {{args}}
-
-replicate-build model:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd "models/{{model}}/replicate"
-    cog build
-
-# Push built image to Replicate (default: TTSDB_REPLICATE_REPO/model, e.g. ttsds/maskgct)
-replicate-push model repo=replicate_repo *args:
-    @cd "models/{{model}}/replicate" && cog push "{{repo}}/{{model}}" {{args}}
-
-replicate-publish model repo=replicate_repo *args:
-    just replicate-generate {{model}}
-    just replicate-build {{model}}
-    just replicate-push {{model}} repo={{repo}} {{args}}
-
-replicate-publish-all repo=replicate_repo *args:
-    for m in {{models}}; do \
-        just replicate-publish $m repo={{repo}} {{args}}; \
-    done
-
 # Run a model's space locally for testing
 hf-space-run model:
     #!/usr/bin/env bash
@@ -262,6 +259,10 @@ pypi-build model:
     set -euo pipefail
     echo "Building {{model}} package..."
     cd "models/{{model}}"
+    # Ensure local version does not clash with PyPI
+    ../../.venv/bin/python ../../builder/bump_pypi_version.py .
+    # Ensure ttsdb-core dependency is pinned to the latest local version
+    ../../.venv/bin/python ../../builder/sync_core_requirement.py .
     rm -rf dist/
     # Vendor upstream code when config has code.url and not package.pypi (vendor.py no-ops when PyPI-only or no code)
     ../../.venv/bin/python ../../builder/vendor.py .
@@ -295,7 +296,7 @@ pypi-publish-all *args:
 # Build the core package for PyPI
 pypi-build-core:
     @echo "Building ttsdb-core package..."
-    cd core && rm -rf dist/ && uv build --no-sources --verbose
+    cd core && ../../.venv/bin/python ../builder/bump_pypi_version.py . && rm -rf dist/ && uv build --no-sources --verbose
 
 # Upload the core package to PyPI (requires UV_PUBLISH_TOKEN or --token)
 pypi-upload-core *args:

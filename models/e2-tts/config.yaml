@@ -48,6 +48,10 @@ weights:
   url: https://huggingface.co/SWivid/E2-TTS
   commit: 67a123c000395128b7410eb6566a6db3162e4687
   license: cc-by-nc-4.0
+  # Dependencies from other repos
+  dependencies:
+    - repo_id: charactr/vocos-mel-24khz
+      local_dir: vocos-mel-24khz
 external:
   citations:
     - id: e2-tts

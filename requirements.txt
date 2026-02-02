@@ -5,5 +5,5 @@ jinja2>=3.0
 # Development
 pytest>=7.0
 
-# Publishing (uncomment when needed)
-# huggingface_hub>=0.20
+# Publishing/weights management
+huggingface_hub>=0.20

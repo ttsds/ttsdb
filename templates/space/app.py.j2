@@ -12,17 +12,50 @@ import gradio as gr
 import numpy as np
 
 from {{ import_name }} import {{ class_name }}
+{% if variants %}
+from ttsdb_core.config import ModelConfig
+{% endif %}
 
 
 # Initialize model (downloads weights on first run)
 MODEL_ID = os.environ.get("MODEL_ID", "ttsds/{{ folder_name }}")
-model = {{ class_name }}(model_id=MODEL_ID)
+DEFAULT_VARIANT = os.environ.get("MODEL_VARIANT", "{{ default_variant or '' }}")
+{% if variants %}
+
+# Available variants for this model
+AVAILABLE_VARIANTS = {{ variants | tojson }}
+{% endif %}
+
+# Global model instance (will be reloaded on variant change)
+model = None
+
+
+def get_model(variant: str = DEFAULT_VARIANT):
+    """Get or reload the model with the specified variant."""
+    global model
+{% if variants %}
+    current_variant = getattr(model, "variant", None) if model else None
+    if model is None or current_variant != variant:
+        print(f"Loading model variant: {variant}")
+        model = {{ class_name }}(model_id=MODEL_ID, variant=variant or None)
+{% else %}
+    if model is None:
+        model = {{ class_name }}(model_id=MODEL_ID)
+{% endif %}
+    return model
+
+
+# Initialize with default variant
+get_model()
 
 def synthesize(
     text: str,
     reference_audio: str,
     reference_text: str,
     language: str,
+{% if variants %}
+    variant: str = DEFAULT_VARIANT,
+{% endif %}
 ) -> tuple[int, np.ndarray]:
     """Synthesize speech from text.
 
@@ -37,6 +70,13 @@ def synthesize(
 
     if not reference_text or not reference_text.strip():
         raise gr.Error("Please enter the transcript of the reference audio.")
+
+{% if variants %}
+    # Get model with selected variant
+    model = get_model(variant)
+{% else %}
+    model = get_model()
+{% endif %}
 
     audio, sr = model.synthesize(
         text=text,
@@ -96,6 +136,14 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
                 ],
                 value="{{ language_codes[0] if language_codes else 'eng' }}",
             )
+{% if variants %}
+            variant = gr.Dropdown(
+                label="Model Variant",
+                choices=AVAILABLE_VARIANTS,
+                value=DEFAULT_VARIANT or AVAILABLE_VARIANTS[0],
+                info="Select model variant/version",
+            )
+{% endif %}
             submit_btn = gr.Button("Synthesize", variant="primary")
 
         with gr.Column():
@@ -112,10 +160,26 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
     _rel = Path("{{ example.reference_audio }}")
     _src = Path(__file__).parent / _rel
     if _src.exists():
+{% if variants %}
+        _runtime_examples.append([_src, "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}", DEFAULT_VARIANT or AVAILABLE_VARIANTS[0]])
+{% else %}
         _runtime_examples.append([_src, "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}"])
+{% endif %}
 {% endif %}
 {% endfor %}
 
+{% if variants %}
+    gr.Examples(
+        examples=_runtime_examples,
+        inputs=[reference_audio, reference_text, text_input, language, variant],
+    )
+
+    submit_btn.click(
+        fn=synthesize,
+        inputs=[text_input, reference_audio, reference_text, language, variant],
+        outputs=[output_audio],
+    )
+{% else %}
     gr.Examples(
         examples=_runtime_examples,
         inputs=[reference_audio, reference_text, text_input, language],
@@ -126,6 +190,7 @@ with gr.Blocks(title="{{ model_name }} TTS") as demo:
         inputs=[text_input, reference_audio, reference_text, language],
         outputs=[output_audio],
     )
+{% endif %}
 
     # Footer with model information and citations
     gr.Markdown(

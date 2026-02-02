@@ -5,7 +5,7 @@ description = "E2 TTS model for TTSDB"
 readme = "README.md"
 requires-python = ">=3.10,<=3.14"
 dependencies = [
-    "ttsdb-core>=0.1.2",
+    "ttsdb-core>=0.1.4",
     # Note: upstream F5-TTS code (which includes E2-TTS model codepaths) is vendored
     # under src/ttsdb_e2_tts/_vendor/source/ via `just fetch e2-tts` / `just setup e2-tts`.
     "einops",

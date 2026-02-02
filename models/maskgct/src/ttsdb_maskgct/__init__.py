@@ -153,13 +153,13 @@ class MaskGCT(VoiceCloningTTSBase):
             MaskGCTModels container with all model components.
         """
         # Resolve checkpoint path early so we can expose it to vendored code (for external assets).
-        if os.path.isdir(load_path):
-            base = load_path
-        else:
-            # Assume HuggingFace model ID - download checkpoints
-            from huggingface_hub import snapshot_download
-
-            base = snapshot_download(repo_id=load_path)
+        base = Path(load_path)
+        if not base.exists():
+            raise FileNotFoundError(
+                f"Model path not found: {load_path}. "
+                "Pass `model_path=` pointing at prepared weights or use `model_id=` to "
+                "let ttsdb_core download weights before loading."
+            )
         self._weights_base = str(base)
 
         # Some vendored code loads large binary assets (e.g. ONNX) from disk.
