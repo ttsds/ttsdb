@@ -16,6 +16,9 @@ outputs
 models/**/weights/
 models/**/space/
 
+# Vendored upstream code (fetched at build time)
+models/**/src/**/_vendor/
+
 # Environment variables
 .env
 
