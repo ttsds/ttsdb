@@ -143,7 +143,7 @@ class VoiceCloningTTSBase(ABC):
         if AutoTokenizer is not None:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(str(load_path))
-            except (OSError, ValueError, TypeError):
+            except (OSError, ValueError, TypeError, ImportError):
                 self.tokenizer = None
         else:
             self.tokenizer = None
@@ -151,7 +151,7 @@ class VoiceCloningTTSBase(ABC):
         if AutoProcessor is not None:
             try:
                 self.processor = AutoProcessor.from_pretrained(str(load_path))
-            except (OSError, ValueError, TypeError):
+            except (OSError, ValueError, TypeError, ImportError):
                 self.processor = None
         else:
             self.processor = None

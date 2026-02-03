@@ -1,0 +1,86 @@
+# Generated at 2026-02-02T10:50:14Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_styletts2"
+version = "0.1.0"
+description = "StyleTTS2 model for TTSDB"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "torch==1.13.1",
+    "torchaudio",
+    "SoundFile",
+    "munch",
+    "pydub",
+    "pyyaml",
+    "librosa",
+    "nltk",
+    "matplotlib",
+    "accelerate",
+    "transformers==4.30.2",
+    "phonemizer",
+    "einops",
+    "einops-exts",
+    "tqdm",
+    "typing-extensions",
+    "Cython",
+    "numpy<2",
+    "monotonic_align @ git+https://github.com/resemble-ai/monotonic_align.git",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_styletts2"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_styletts2/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_styletts2/config.yaml"
+"src/ttsdb_styletts2/_vendor/source" = "ttsdb_styletts2/_vendor/source"
+
+[tool.hatch.metadata]
+allow-direct-references = true

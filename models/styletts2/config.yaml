@@ -1,0 +1,62 @@
+metadata:
+  name: "StyleTTS2"
+  id: "styletts2"
+  description: |
+    StyleTTS 2 diffusion-based TTS with explicit style modeling and
+    prosody prediction, trained on LibriTTS.
+  training_data:
+    - id: libritts
+      name: LibriTTS
+      hours: 240
+  languages:
+    - eng
+  num_parameters: 191
+  release_date: 2023-10-02
+  target_representation:
+    - Mel
+  sample_rate: 24000
+  architecture:
+    - Non-Autoregressive
+    - Grapheme-to-Phoneme
+    - Diffusion
+    - Prosody Prediction
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=1.13.1"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+code:
+  url: https://github.com/yl4579/StyleTTS2
+  commit: main
+  root: .
+  license: mit
+weights:
+  url: https://huggingface.co/yl4579/StyleTTS2-LibriTTS
+  commit: main
+  license: cc-by-nc-4.0
+external:
+  citations:
+    - id: styletts2
+      text: >
+        @article{li2023styletts,
+          title={Styletts 2: Towards human-level text-to-speech through style diffusion and adversarial training with large speech language models},
+          author={Li, Yinghao Aaron and Han, Cong and Raghavan, Vinay and Mischler, Gavin and Mesgarani, Nima},
+          journal={Advances in Neural Information Processing Systems},
+          year={2023}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2306.07691
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference

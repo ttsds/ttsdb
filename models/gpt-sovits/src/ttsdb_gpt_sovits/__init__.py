@@ -615,7 +615,7 @@ class GPTSoVITS(VoiceCloningTTSBase):
         supported = VERSION_LANGUAGES.get(self._version, {"en", "zh", "ja"})
         if lang not in supported:
             raise ValueError(
-                f"Language '{lang}' not supported in {self._version}. " f"Supported: {supported}"
+                f"Language '{lang}' not supported in {self._version}. Supported: {supported}"
             )
 
         # Sampling parameters

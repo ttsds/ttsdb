@@ -1,0 +1,89 @@
+metadata:
+  name: "WhisperSpeech"
+  id: "whisperspeech"
+  description: |
+    WhisperSpeech text-to-speech pipeline using Whisper-based tokenization and
+    EnCodec acoustic decoding.
+  training_data:
+    - id: mls
+      name: MLS
+    - id: librilight
+      name: LibriLight
+  languages:
+    - eng
+    - pol
+    - deu
+    - fra
+    - ita
+    - nld
+    - spa
+    - por
+  num_parameters: 1300
+  release_date: 2024-05-14
+  target_representation:
+    - Codec
+    - EnCodec
+  sample_rate: 24000
+  architecture:
+    - Autoregressive
+    - Non-Autoregressive
+    - Grapheme-to-Phoneme
+    - Language Model
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.1"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+code:
+  url: https://github.com/WhisperSpeech/WhisperSpeech
+  commit: a45964589f0a5c7b8518b2fda1b60e334872c4bd
+  root: .
+  license: mit
+weights:
+  url: https://huggingface.co/WhisperSpeech/WhisperSpeech
+  commit: main
+  license: mit
+variants:
+  default: small
+  small:
+    metadata:
+      release_date: 2024-05-14
+      num_parameters: 1300
+      languages:
+        - eng
+        - pol
+        - deu
+        - fra
+        - ita
+        - nld
+        - spa
+        - por
+external:
+  citations:
+    - id: whisperspeech
+      text: >
+        @misc{WhisperSpeech2024,
+          author = {C\u0142apa, Jakub Piotr and others},
+          title = {WhisperSpeech},
+          year = {2024},
+          publisher = {GitHub},
+          journal = {GitHub repository},
+          howpublished = {\url{https://github.com/WhisperSpeech/WhisperSpeech}},
+        }
+  paper_urls:
+    - https://github.com/WhisperSpeech/WhisperSpeech
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language

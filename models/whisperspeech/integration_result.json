@@ -1,0 +1,19 @@
+{
+  "model_id": "whisperspeech",
+  "passed": true,
+  "timestamp": "2026-02-03T21:27:04Z",
+  "variants_tested": [
+    "small"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 7,
+  "artifacts": [
+    "small/deu_test_001.wav",
+    "small/eng_test_001.wav",
+    "small/fra_test_001.wav",
+    "small/ita_test_001.wav",
+    "small/nld_test_001.wav",
+    "small/pol_test_001.wav",
+    "small/spa_test_001.wav"
+  ]
+}

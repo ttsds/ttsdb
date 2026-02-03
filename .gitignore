@@ -2,6 +2,7 @@ build
 archive
 *.egg-info
 __pycache__/
+*.pyc
 *.py[cod]
 .*
 !.gitignore

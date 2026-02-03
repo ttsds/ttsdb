@@ -1,0 +1,83 @@
+# Generated at 2026-02-02T09:52:12Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_vevo"
+version = "0.1.0"
+description = "Vevo model for TTSDB"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "torch>=2.4.1",
+    "torchaudio>=2.4.1",
+    "torchcodec>=0.9.1",
+    "torchvision>=0.19.1",
+    "numpy>=1.21.5",
+    "scipy>=1.7.0",
+    "soundfile>=0.10.0",
+    "librosa>=0.10.0",
+    "transformers==4.41.2",
+    "accelerate>=0.24.1",
+    "phonemizer>=3.2.1",
+    "unidecode>=1.3.6",
+    "g2p_en>=2.1.0",
+    "jieba>=0.42.1",
+    "cn2an>=0.5.0",
+    "pypinyin>=0.48.0",
+    "pykakasi>=2.2.1",
+    "pyworld>=0.3.5",
+    "langsegment-backup==0.3.5.post1"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_vevo"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_vevo/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_vevo/config.yaml"
+"src/ttsdb_vevo/_vendor/source" = "ttsdb_vevo/_vendor/source"

@@ -288,7 +288,7 @@ class BaseModelIntegrationTests:
             variant_name = variant or "default"
             output_dir = audio_examples_dir / variant_name
             output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = output_dir / f"{lang}_test_{i+1:03d}.wav"
+            output_path = output_dir / f"{lang}_test_{i + 1:03d}.wav"
             sf.write(str(output_path), audio, sr)
             assert output_path.exists()
             assert output_path.stat().st_size > 0
