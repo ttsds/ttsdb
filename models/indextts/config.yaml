@@ -1,0 +1,60 @@
+metadata:
+  name: "IndexTTS"
+  id: "indextts"
+  description: |
+    IndexTTS2 is an emotionally expressive, duration-controlled zero-shot TTS model.
+  training_data: null
+  languages:
+    - eng
+    - zho
+  num_parameters: null
+  release_date: 2025-06-30
+  target_representation:
+    - Mel spectrogram
+  sample_rate: 22050
+  architecture:
+    - Autoregressive
+    - Emotion Control
+    - Voice Cloning
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+    - libsndfile1
+code:
+  url: https://github.com/index-tts/index-tts
+  commit: 1698b32033f38a034572891aed698609da2ff392
+  root: .
+  license: other
+weights:
+  url: https://huggingface.co/IndexTeam/IndexTTS-2
+  commit: 740dcaff396282ffb241903d150ac011cd4b1ede
+  license: other
+external:
+  citations:
+    - id: indextts
+      text: >
+        @article{indextts2,
+          title={IndexTTS2: Emotionally Expressive and Duration-Controlled Zero-Shot TTS},
+          author={Bilibili IndexTTS Team},
+          journal={arXiv preprint arXiv:2506.21619},
+          year={2025}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2506.21619
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language

@@ -1,0 +1,66 @@
+# Generated at 2026-02-03T00:00:00Z from templates/init/config.yaml.j2
+
+metadata:
+  name: "VibeVoice"
+  id: "vibevoice"
+  description: |
+    VibeVoice is a large-scale text-to-speech model that generates expressive,
+    long-form speech. This integration focuses on single-speaker voice cloning
+    with a reference audio prompt.
+  training_data: null
+  languages:
+    - eng
+    - zho
+  num_parameters: 1500
+  release_date: 2025-08-26
+  target_representation:
+    - Codec
+  sample_rate: 24000
+  architecture:
+    - Next-token diffusion
+    - Voice Cloning
+    - LLM-conditioned
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - git
+    - git-lfs
+    - ffmpeg
+    - libsndfile1
+code:
+  url: https://github.com/Enemyx-net/VibeVoice-ComfyUI
+  commit: 9185f531ac45fc67576f9877caf1a6c8c7d340b5
+  root: .
+  license: mit
+weights:
+  url: https://huggingface.co/microsoft/VibeVoice-1.5B
+  commit: c00898d257e6b46004e3e2866a47534085fb685a
+  license: mit
+  dependencies:
+    - repo_id: Qwen/Qwen2.5-1.5B
+      local_dir: qwen_tokenizer
+      allow_patterns:
+        - tokenizer_config.json
+        - tokenizer.json
+        - vocab.json
+        - merges.txt
+external:
+  citations:
+    - id: vibevoice
+      text: >
+        @article{vibevoice2025,
+          title={VibeVoice: A Frontier Open-Source Text-to-Speech Model},
+          author={Microsoft Research},
+          journal={arXiv preprint arXiv:2508.19205},
+          year={2025}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2508.19205
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference

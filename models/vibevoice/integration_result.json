@@ -1,0 +1,14 @@
+{
+  "model_id": "vibevoice",
+  "passed": true,
+  "timestamp": "2026-02-03T23:22:24Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 2,
+  "artifacts": [
+    "default/eng_test_001.wav",
+    "default/zho_test_001.wav"
+  ]
+}

@@ -73,6 +73,11 @@ models:
 readme:
     .venv/bin/python builder/root_readme.py
 
+# Synthesize datasets across models
+# Usage: just synth-dataset run --gpus 0,1 --models xtts vibevoice
+synth-dataset *args:
+    .venv/bin/python builder/synthesize_dataset.py {{args}}
+
 # Initialize a new model from templates
 #
 # Python version knobs:

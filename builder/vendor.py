@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -114,10 +115,15 @@ def fetch_source(
 
     print(f"Cloning {url}" + (f" @ {commit}" if commit else "") + "...")
 
+    env = dict(**os.environ)
+    # Skip Git LFS smudge to avoid failing on large binary assets during vendoring.
+    env.setdefault("GIT_LFS_SKIP_SMUDGE", "1")
+
     # Clone the repository
     subprocess.run(
         ["git", "clone", "--depth", "1", url, str(target_dir)],
         check=True,
+        env=env,
     )
 
     # Checkout specific commit if provided
@@ -127,11 +133,13 @@ def fetch_source(
             ["git", "fetch", "--depth", "1", "origin", commit],
             cwd=target_dir,
             check=True,
+            env=env,
         )
         subprocess.run(
             ["git", "checkout", commit],
             cwd=target_dir,
             check=True,
+            env=env,
         )
 
     # Remove .git folder to save space and prevent confusion
