@@ -1,0 +1,16 @@
+{
+  "model_id": "openvoice",
+  "passed": true,
+  "timestamp": "2026-02-03T22:16:59Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 4,
+  "artifacts": [
+    "default/eng_test_001.wav",
+    "default/fra_test_001.wav",
+    "default/spa_test_001.wav",
+    "default/zho_test_001.wav"
+  ]
+}
