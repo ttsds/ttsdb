@@ -75,6 +75,21 @@ def _resolve_model_class_path(model_dir: Path) -> str:
     return f"{import_name}.{class_name}"
 
 
+def _resolve_import_name(model_dir: Path) -> str:
+    pyproject_path = model_dir / "pyproject.toml"
+    if not pyproject_path.exists():
+        raise FileNotFoundError(f"Missing pyproject.toml in {model_dir}")
+
+    import tomllib
+
+    with pyproject_path.open("rb") as f:
+        pyproject = tomllib.load(f)
+    project_name = pyproject.get("project", {}).get("name")
+    if not project_name:
+        raise ValueError(f"Missing project.name in {pyproject_path}")
+    return _normalize_import_name(project_name)
+
+
 def _load_model_config(model_dir: Path) -> dict:
     config_path = model_dir / "config.yaml"
     if not config_path.exists():
@@ -307,7 +322,26 @@ def _split_jobs(jobs: list[Job], gpu_ids: list[str]) -> dict[str, list[Job]]:
     return shards
 
 
-def _run_worker(
+def _ensure_model_ready(model_dir: Path) -> Path:
+    import_name = _resolve_import_name(model_dir)
+    vendor_dir = model_dir / "src" / import_name / "_vendor" / "source"
+    if not vendor_dir.exists():
+        fetch_cmd = ["just", "fetch", model_dir.name]
+        subprocess.run(fetch_cmd, cwd=ROOT_DIR, check=True)
+
+    venv_python = model_dir / ".venv" / "bin" / "python"
+    if not venv_python.exists():
+        setup_cmd = ["just", "setup", model_dir.name, "gpu"]
+        subprocess.run(setup_cmd, cwd=ROOT_DIR, check=True)
+
+    if not venv_python.exists():
+        raise FileNotFoundError(f"Missing venv for {model_dir.name} after setup.")
+
+    return venv_python
+
+
+def _start_worker(
+    venv_python: Path,
     model_dir: Path,
     jobs: list[Job],
     output_dir: Path,
@@ -315,20 +349,15 @@ def _run_worker(
     whisper_model: str,
     no_wer: bool,
     device: str | None,
-) -> list[dict[str, Any]]:
-    if not jobs:
-        return []
-
-    venv_python = model_dir / ".venv" / "bin" / "python"
-    if not venv_python.exists():
-        raise FileNotFoundError(
-            f"Missing venv for {model_dir.name}. Run: just setup {model_dir.name} gpu"
-        )
-
+) -> dict[str, Any]:
     class_path = _resolve_model_class_path(model_dir)
     weights_path = model_dir / "weights"
     shard_dir = output_dir / ".shards"
     shard_dir.mkdir(parents=True, exist_ok=True)
+
+    worker_script = ROOT_DIR / "builder" / "dataset_worker.py"
+    if not worker_script.exists():
+        raise FileNotFoundError(f"Missing dataset worker at {worker_script}")
 
     shard_path = shard_dir / f"{model_dir.name}_gpu{gpu_id}.json"
     result_path = shard_dir / f"{model_dir.name}_gpu{gpu_id}_results.json"
@@ -342,8 +371,7 @@ def _run_worker(
 
     cmd = [
         str(venv_python),
-        "-m",
-        "ttsdb_core.dataset_worker",
+        str(worker_script),
         "--model-class",
         class_path,
         "--model-path",
@@ -362,10 +390,21 @@ def _run_worker(
     if device:
         cmd.extend(["--device", device])
 
-    subprocess.run(cmd, env=env, check=True)
+    proc = subprocess.Popen(
+        cmd,
+        cwd=ROOT_DIR,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
 
-    with result_path.open() as f:
-        return json.load(f)
+    return {
+        "proc": proc,
+        "jobs": jobs,
+        "result_path": result_path,
+        "gpu_id": gpu_id,
+    }
 
 
 def run(args: argparse.Namespace) -> int:
@@ -430,12 +469,16 @@ def run(args: argparse.Namespace) -> int:
 
     for model_id, model_jobs in jobs_by_model.items():
         model_dir = MODELS_DIR / model_id
+        venv_python = _ensure_model_ready(model_dir)
         shards = _split_jobs(model_jobs, gpu_ids)
+        processes: list[dict[str, Any]] = []
+
         for gpu_id, shard_jobs in shards.items():
             if not shard_jobs:
                 continue
-            try:
-                results = _run_worker(
+            processes.append(
+                _start_worker(
+                    venv_python=venv_python,
                     model_dir=model_dir,
                     jobs=shard_jobs,
                     output_dir=output_dir,
@@ -444,6 +487,30 @@ def run(args: argparse.Namespace) -> int:
                     no_wer=args.no_wer,
                     device=args.device,
                 )
+            )
+
+        for entry in processes:
+            proc = entry["proc"]
+            stdout, stderr = proc.communicate()
+            shard_jobs = entry["jobs"]
+            result_path = entry["result_path"]
+
+            if proc.returncode != 0:
+                err_tail = (stderr or stdout or "").strip()
+                if err_tail:
+                    err_tail = "\n".join(err_tail.splitlines()[-20:])
+                for job in shard_jobs:
+                    existing_jobs[job.job_id] = {
+                        "model_id": job.model_id,
+                        "variant": job.variant,
+                        "language": job.language,
+                        "output_relpath": job.output_relpath,
+                        "status": "failed",
+                        "error": err_tail or "Worker failed with non-zero exit code.",
+                    }
+            else:
+                with result_path.open() as f:
+                    results = json.load(f)
                 for result in results:
                     job_id = result.get("job_id")
                     if not job_id:
@@ -454,16 +521,6 @@ def run(args: argparse.Namespace) -> int:
                         "status", job_status.get("status", "completed")
                     )
                     existing_jobs[job_id] = job_status
-            except subprocess.CalledProcessError as exc:
-                for job in shard_jobs:
-                    existing_jobs[job.job_id] = {
-                        "model_id": job.model_id,
-                        "variant": job.variant,
-                        "language": job.language,
-                        "output_relpath": job.output_relpath,
-                        "status": "failed",
-                        "error": f"Worker failed: {exc}",
-                    }
 
             _update_summary(status)
             _write_status(status_path, status)

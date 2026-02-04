@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-from . import VoiceCloningTTSBase
+from ttsdb_core import VoiceCloningTTSBase
 
 
 def _normalize_text(text: str) -> list[str]:
@@ -112,6 +111,8 @@ def main() -> int:
         text = job.get("text")
         reference_audio = job.get("reference_audio")
 
+        output_path = output_dir / output_rel
+
         result: dict[str, Any] = {
             "job_id": job_id,
             "output_relpath": output_rel,
@@ -120,16 +121,18 @@ def main() -> int:
         }
 
         try:
-            audio, sr = model.synthesize(
-                text=text,
-                reference_audio=reference_audio,
-                language=language,
-                text_reference=job.get("text_reference", ""),
-            )
+            if output_path.exists():
+                result["skipped"] = "output_exists"
+            else:
+                audio, sr = model.synthesize(
+                    text=text,
+                    reference_audio=reference_audio,
+                    language=language,
+                    text_reference=job.get("text_reference", ""),
+                )
 
-            output_path = output_dir / output_rel
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            model.save_audio(np.asarray(audio), int(sr), output_path)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                model.save_audio(np.asarray(audio), int(sr), output_path)
 
             if whisper_model is not None:
                 transcript = _transcribe(whisper_model, output_path, language)
