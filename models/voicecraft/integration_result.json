@@ -1,0 +1,13 @@
+{
+  "model_id": "voicecraft",
+  "passed": true,
+  "timestamp": "2026-02-03T21:03:19Z",
+  "variants_tested": [
+    "giga830m_tts_enhanced"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 1,
+  "artifacts": [
+    "giga830m_tts_enhanced/eng_test_001.wav"
+  ]
+}

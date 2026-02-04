@@ -1,0 +1,24 @@
+{
+  "model_id": "xtts",
+  "passed": true,
+  "timestamp": "2026-02-03T21:54:55Z",
+  "variants_tested": [
+    "v2"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 12,
+  "artifacts": [
+    "v2/ara_test_001.wav",
+    "v2/ces_test_001.wav",
+    "v2/deu_test_001.wav",
+    "v2/eng_test_001.wav",
+    "v2/fra_test_001.wav",
+    "v2/hin_test_001.wav",
+    "v2/hun_test_001.wav",
+    "v2/ita_test_001.wav",
+    "v2/nld_test_001.wav",
+    "v2/pol_test_001.wav",
+    "v2/spa_test_001.wav",
+    "v2/zho_test_001.wav"
+  ]
+}

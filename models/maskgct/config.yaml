@@ -1,0 +1,78 @@
+metadata:
+  name: "MaskGCT"
+  id: "maskgct"
+  description: |
+    MaskGCT is a zero-shot text-to-speech model using a masked generative codec transformer by [Amphion](https://github.com/open-mmlab/Amphion).
+  training_data:
+    - id: amphion/Emilia-Dataset
+      name: Emilia Dataset
+      url: https://huggingface.co/datasets/amphion/Emilia-Dataset
+      hours: 100000
+  languages:  # ISO 639-3 codes
+    - eng  # English
+    - zho  # Chinese
+    - kor  # Korean
+    - jpn  # Japanese
+    - fra  # French
+    - deu  # German
+  num_parameters: 1010
+  release_date: 2024-10-17
+  target_representation:
+    - Codec
+  sample_rate: 24000
+  architecture:
+    - Non-Autoregressive
+    - Masked
+    - Transformer
+dependencies:
+  python: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - build-essential
+    - git
+    - espeak-ng
+code:
+  url: https://github.com/open-mmlab/Amphion
+  commit: f7cb4b42a7f433496468ed5a3c21c1ea5f6b5380
+  root: .
+  license: mit
+  # Some upstream repos include large binary assets inside the research code.
+  # These should be extracted into our HuggingFace *weights* repo (and excluded from wheels).
+  vendor_assets:
+    - source: models/tts/maskgct/g2p/sources/g2p_chinese_model/poly_bert_model.onnx
+      dest: vendor_assets/models/tts/maskgct/g2p/sources/g2p_chinese_model/poly_bert_model.onnx
+      patch:
+        # Patch the vendored code to load the ONNX from $TTSDB_VENDOR_ASSETS_DIR if missing.
+        file: models/tts/maskgct/g2p/g2p/chinese_model_g2p.py
+        env: TTSDB_VENDOR_ASSETS_DIR
+weights:
+  url: https://huggingface.co/amphion/MaskGCT
+  commit: e3c5700
+  license: cc-by-nc-4.0
+external:
+  citations:
+    - id: wang2024maskgct
+      text: >
+        @article{wang2024maskgct,
+          title={MaskGCT: Zero-Shot Text-to-Speech with Masked Generative Codec Transformer},
+          author={Wang, Yuancheng and Zhan, Haoyue and Liu, Liwei and Zeng, Ruihong and Guo, Haotian and Zheng, Jiachen and Zhang, Qiang and Zhang, Xueyao and Zhang, Shunsi and Wu, Zhizheng},
+          journal={arXiv preprint arXiv:2409.00750},
+          year={2024}
+        }
+    - id: amphion
+      text: >
+        @inproceedings{amphion,
+          author={Zhang, Xueyao and Xue, Liumeng and Gu, Yicheng and Wang, Yuancheng and Li, Jiaqi and He, Haorui and Wang, Chaoren and Song, Ting and Chen, Xi and Fang, Zihao and Chen, Haopeng and Zhang, Junan and Tang, Tze Ying and Zou, Lexiao and Wang, Mingxuan and Han, Jun and Chen, Kai and Li, Haizhou and Wu, Zhizheng},
+          title={Amphion: An Open-Source Audio, Music and Speech Generation Toolkit},
+          booktitle={{IEEE} Spoken Language Technology Workshop, {SLT} 2024},
+          year={2024}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2409.00750
+    - https://ieeexplore.ieee.org/abstract/document/10832255
+api:
+  parameters:
+    text: text
+    language: language
+    speaker_reference: speaker_reference
+    text_reference: text_reference

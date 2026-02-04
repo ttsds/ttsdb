@@ -1,0 +1,100 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+
+metadata:
+  name: "{{ model_name }}"
+  id: "{{ folder_name }}"
+  # Markdown description used for README generation.
+  # Tip: use a YAML block scalar (|) to keep formatting.
+  description: |
+    TODO: Add a short markdown description of the model.
+
+  training_data:
+    - id: # TODO: HuggingFace dataset ID
+      name: # TODO: Dataset name
+      url: # TODO: Dataset URL
+      hours: # TODO: Number of hours
+  # Language codes use ISO 639-3 standard across ttsdb.
+  languages:
+    - eng
+  num_parameters: # TODO: Number of parameters (in millions)
+  release_date: # TODO: YYYY-MM-DD
+  target_representation:
+    - Codec # TODO: Codec, Mel, etc.
+  sample_rate: 24000
+  architecture:
+    - # TODO: Architecture description
+dependencies:
+  # Supported Python versions for this model package (PEP 440 specifier string).
+  # Examples:
+  #   ">=3.10,<3.12"   (min/max)
+  #   "==3.10.*"       (pinned minor line)
+  python: "{{ python_requires }}"
+  # Optional: explicitly list tested interpreter versions (human-facing).
+  # Note: packaging metadata (`requires-python`) cannot express disjoint sets well,
+  # so keep `python` as a sensible range and use this list for clarity.
+  python_tested:
+    - "{{ python_venv }}"
+  # Concrete interpreter version used by `just setup` when creating a venv.
+  # Override with: `just setup {{ folder_name }} python=3.11`
+  python_venv: "{{ python_venv }}"
+  torch: "{{ torch_version }}"
+  # APT packages used by Space Dockerfile. Omit to use default [build-essential, git].
+  system_packages:
+    - build-essential
+    - git
+# Set package.pypi when the model uses an external PyPI package (not vendored code).
+# The external package is installed and wrapped by the ttsdb_<model> package.
+# Omit when the model vendors research code from code.url.
+# package:
+#   pypi:
+#     name: ""  # External PyPI package name
+#     version: "1.0.0"  # External PyPI package version
+code:
+  url: # TODO: GitHub URL
+  commit: # TODO: Commit hash
+  root: # TODO: Root directory in repo
+  license: # TODO: License identifier (mit, apache-2.0, etc.)
+  # Optional: declare large/binary assets that are shipped with upstream research code.
+  # These can be copied into the HuggingFace weights repo and removed from the vendored code
+  # before building/publishing wheels.
+  # vendor_assets:
+  #   - source: path/inside/upstream/repo/to/asset.bin
+  #     dest: vendor_assets/path/inside/upstream/repo/to/asset.bin
+  #     patch:
+  #       file: path/inside/upstream/repo/to/python_file.py
+  #       env: TTSDB_VENDOR_ASSETS_DIR
+weights:
+  url: # TODO: HuggingFace model URL
+  commit: # TODO: Commit hash
+  license: # TODO: License identifier
+# Model variants - different versions/checkpoints available.
+# Use variant="v1" when initializing the model to use a specific variant.
+# Default variant is used when no variant is specified.
+#
+# Note: static HF repo subdir mappings and allow_patterns are defined in
+# prepare_weights.py, not here. Keep variants focused on identifiers and
+# metadata overrides (e.g., release_date).
+# variants:
+#   default: "base"
+#   base: {}  # Base variant
+#   v1:
+#     metadata:
+#       release_date: 2025-03-12
+external:
+  citations:
+    - id: {{ folder_name }}
+      text: >
+        @article{ {{ folder_name }},
+          title={ {{ model_name }} },
+          author={},
+          journal={arXiv preprint arXiv:},
+          year={}
+        }
+  paper_urls:
+    - # TODO: Paper URL
+api:
+  parameters:
+    text: text
+    language: language
+    speaker_reference: speaker_reference
+    text_reference: text_reference

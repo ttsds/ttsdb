@@ -1,0 +1,67 @@
+# Generated at 2026-02-02T10:50:14Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_xtts"
+version = "0.1.0"
+description = "XTTS model for TTSDB"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "coqui-tts==0.25.3",
+    "numpy<2",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "torchcodec>=0.3.0",
+    "cutlet>=0.4.0",
+    "pypinyin>=0.55.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_xtts"]
+include = []
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_xtts/config.yaml"

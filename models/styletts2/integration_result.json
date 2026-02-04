@@ -1,0 +1,13 @@
+{
+  "model_id": "styletts2",
+  "passed": true,
+  "timestamp": "2026-02-03T17:46:58Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 1,
+  "artifacts": [
+    "default/eng_test_001.wav"
+  ]
+}

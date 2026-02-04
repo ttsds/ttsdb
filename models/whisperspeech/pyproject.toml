@@ -1,0 +1,71 @@
+# Generated at 2026-02-02T10:50:14Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_whisperspeech"
+version = "0.1.0"
+description = "WhisperSpeech model for TTSDB"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "torch==2.0.1",
+    "torchaudio",
+    "WhisperSpeech==0.8.9",
+    "webdataset",
+    "numpy<2",
+    "ipython>=8.0.0",
+    "huggingface-hub<=0.20.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_whisperspeech"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_whisperspeech/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_whisperspeech/config.yaml"
+"src/ttsdb_whisperspeech/_vendor/source" = "ttsdb_whisperspeech/_vendor/source"

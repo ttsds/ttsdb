@@ -1,0 +1,68 @@
+metadata:
+  name: "VoiceCraft"
+  id: "voicecraft"
+  description: |
+    Zero-shot speech editing and TTS model using EnCodec tokenization and
+    a delayed autoregressive architecture.
+  training_data:
+    - id: gigaspeech
+      name: GigaSpeech
+  languages:
+    - eng
+  num_parameters: 830
+  release_date: 2024-03-28
+  target_representation:
+    - Codec
+  sample_rate: 16000
+  architecture:
+    - Autoregressive
+    - Grapheme-to-Phoneme
+    - Delay Pattern
+    - Language Model
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.1.0"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+code:
+  url: https://github.com/jasonppy/VoiceCraft
+  commit: a702dfd2ced6d4fd6b04bdc160c832c6efc8f6c5
+  root: .
+  license: cc-by-nc-sa-4.0
+weights:
+  url: https://huggingface.co/pyp1/VoiceCraft
+  commit: main
+  license: cc-by-nc-sa-4.0
+variants:
+  default: giga830m_tts_enhanced
+  giga830m_tts_enhanced:
+    metadata:
+      num_parameters: 830
+      release_date: 2024-03-28
+external:
+  citations:
+    - id: voicecraft
+      text: >
+        @article{peng2024voicecraft,
+          author    = {Peng, Puyuan and Huang, Po-Yao and Mohamed, Abdelrahman and Harwath, David},
+          title     = {VoiceCraft: Zero-Shot Speech Editing and Text-to-Speech in the Wild},
+          journal   = {arXiv},
+          year      = {2024}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2403.16973
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference

@@ -1,0 +1,52 @@
+# TTSDB
+
+TTSDB is a collection of python packages for text-to-speech (TTS) models.
+
+## Requirements
+
+[just](https://github.com/casey/just) is the only dependency that needs to be installed before getting started.
+
+## Quickstart
+
+```bash
+# Install uv, pre-commit, and git hooks (one-time setup)
+just bootstrap
+
+# List available models
+just models
+
+# Set up a model for development
+just setup maskgct cpu
+
+# Run linters
+just lint
+```
+
+## Dataset synthesis (CLI)
+
+```bash
+# Synthesize across all models (default variant per model)
+just synth-dataset run --all-models --gpus 0,1
+
+# Run with a custom dataset YAML (pairs or test_data format)
+just synth-dataset run --dataset assets/example_dataset.yaml --models vibevoice xtts --gpus 0
+
+# Folder-based pairs (suffix -01 as reference, -02 as target)
+just synth-dataset run --dataset-folder ../sap_readable --language eng --gpus 0,1
+
+# Check progress
+just synth-dataset status
+```
+
+## TTS systems
+
+| **System** | **Training Data** | **Multilingual** | **Languages** | **Training (k hours)** | **Num. Parameters (M)** | **Target Repr.** | **NAR** | **AR** | **Diffusion** |
+|---|---|---|---|---|---|---|---|---|---|
+{% for s in systems -%}
+| [**{{ s.name }}**]({{ s.local_path }}) | {{ s.training_data }} | {{ s.multilingual }} | {{ s.languages }} | {{ s.training_k_hours }} | {{ s.num_parameters_m }} | {{ s.target_repr }} | {{ s.nar }} | {{ s.ar }} | {{ s.diffusion }} |
+{% endfor %}
+
+## Disclaimers
+
+- Respect each upstream model's license and terms before use.
+- Don't clone anyone's voice without permission.

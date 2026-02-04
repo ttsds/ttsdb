@@ -1,0 +1,31 @@
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+
+from ttsdb_core import VoiceCloningTTSBase, AudioInput, AudioOutput, setup_vendor_path
+
+# Uncomment to add vendored code to path (run `just fetch {{ folder_name }}` first)
+# setup_vendor_path("{{ import_name }}")
+# from external_module import SomeClass  # Now you can import vendored code
+
+
+class {{ class_name }}(VoiceCloningTTSBase):
+    """{{ model_name }} voice cloning TTS model.
+
+    Config is automatically loaded and accessible via `self.model_config`.
+
+    Example:
+        >>> model = {{ class_name }}(model_id="...")
+        >>> print(model.model_config.metadata.name)
+        '{{ model_name }}'
+    """
+
+    _package_name = "{{ import_name }}"
+
+    def _load_model(self, load_path):
+        # TODO: Load the model from load_path (local weights directory).
+        # ttsdb_core resolves HuggingFace model_id to a local path before calling this.
+        raise NotImplementedError("_load_model must be implemented")
+
+    def _synthesize(self, text, reference_audio, reference_sample_rate, **kwargs):
+        # TODO: Implement synthesis logic
+        # Returns: tuple of (audio_array, sample_rate)
+        raise NotImplementedError("_synthesize must be implemented")

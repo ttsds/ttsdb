@@ -1,0 +1,17 @@
+{
+  "model_id": "f5-tts",
+  "passed": true,
+  "timestamp": "2026-02-02T08:56:09Z",
+  "variants_tested": [
+    "base",
+    "v1"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 4,
+  "artifacts": [
+    "base/eng_test_001.wav",
+    "base/zho_test_001.wav",
+    "v1/eng_test_001.wav",
+    "v1/zho_test_001.wav"
+  ]
+}

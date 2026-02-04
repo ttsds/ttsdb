@@ -1,0 +1,95 @@
+[project]
+name = "ttsdb_e2_tts"
+version = "0.1.2"
+description = "E2 TTS model for TTSDB"
+readme = "README.md"
+requires-python = ">=3.10,<=3.14"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    # Note: upstream F5-TTS code (which includes E2-TTS model codepaths) is vendored
+    # under src/ttsdb_e2_tts/_vendor/source/ via `just fetch e2-tts` / `just setup e2-tts`.
+    "einops",
+    "cached-path",
+    "huggingface-hub",
+    # librosa pulls in numba; keep a pin to avoid uv resolution issues.
+    "numba==0.63.1", # see https://github.com/astral-sh/uv/issues/17280
+    # F5-TTS dependencies
+    "accelerate>=0.33.0",
+    "bitsandbytes>0.37.0",
+    "cached_path",
+    "click",
+    "datasets",
+    "ema_pytorch>=0.5.2",
+    "gradio>=3.45.2",
+    "jieba",
+    "librosa",
+    "matplotlib",
+    "numpy<=1.26.4",
+    "pydub",
+    "pypinyin",
+    "safetensors",
+    "soundfile",
+    "tomli",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "torchdiffeq",
+    "tqdm>=4.65.0",
+    "transformers",
+    "transformers_stream_generator",
+    "vocos",
+    "wandb",
+    "x_transformers>=1.31.14",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_e2_tts"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_e2_tts/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_e2_tts/config.yaml"
+"src/ttsdb_e2_tts/_vendor/source" = "ttsdb_e2_tts/_vendor/source"

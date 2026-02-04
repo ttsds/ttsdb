@@ -1,0 +1,7 @@
+dataset_name: example_dataset
+pairs:
+- speaker: some-speaker
+  language: eng
+  reference_audio: assets/reference_audio/daisy/eng.wav
+  reference_text: This is Learning English from the News, our podcast about the news headlines.
+  target_text: This is a simple test sentence for synthesis.

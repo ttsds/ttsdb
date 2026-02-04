@@ -1,0 +1,15 @@
+{
+  "model_id": "pheme",
+  "passed": true,
+  "timestamp": "2026-02-03T17:36:40Z",
+  "variants_tested": [
+    "base",
+    "small"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 2,
+  "artifacts": [
+    "base/eng_test_001.wav",
+    "small/eng_test_001.wav"
+  ]
+}

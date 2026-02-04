@@ -1,0 +1,21 @@
+{
+  "model_id": "hierspeech",
+  "passed": true,
+  "timestamp": "2026-02-03T16:54:14Z",
+  "variants_tested": [
+    "lt460",
+    "lt960",
+    "v1",
+    "v1.1"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 6,
+  "artifacts": [
+    "lt460/eng_test_001.wav",
+    "lt960/eng_test_001.wav",
+    "v1/eng_test_001.wav",
+    "v1/kor_test_001.wav",
+    "v1.1/eng_test_001.wav",
+    "v1.1/kor_test_001.wav"
+  ]
+}

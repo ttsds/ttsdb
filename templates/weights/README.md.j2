@@ -1,0 +1,112 @@
+---
+# Generated at {{ generated_at }} from {{ generated_from_template }}
+license: {{ weights_license }}
+language:
+{%- for lang in language_codes %}
+  - {{ lang }}
+{%- endfor %}
+tags:
+  - tts
+  - text-to-speech
+  - speech-synthesis
+  - voice-cloning
+library_name: ttsdb
+pipeline_tag: text-to-speech{% if base_model %}
+base_model:
+  - {{ base_model }}
+{% endif %}
+---
+
+# {{ model_name }}
+
+> **This is a mirror of the original weights for use with [TTSDB](https://github.com/ttsds/ttsdb).**
+>
+> Original weights: [{{ weights_url }}]({{ weights_url }})
+> Original code: [{{ code_url }}]({{ code_url }})
+
+{% if description %}
+{{ description }}
+
+{% else %}
+{{ model_name }} is a {{ architecture | join(", ") }} text-to-speech model{% if language_names %} supporting {{ language_names | join(", ") }}{% endif %}.
+{% endif %}
+
+## Original Work
+
+This model was created by the original authors. Please cite their work if you use this model:
+
+{% for citation in citations %}
+```bibtex
+{{ citation.text | trim }}
+```
+{% endfor %}
+
+{% if paper_urls %}
+**Papers:**
+{% for url in paper_urls %}
+- {{ url }}
+{% endfor %}
+{% endif %}
+
+## Installation
+
+```bash
+pip install ttsdb-{{ package_name }}
+```
+
+## Usage
+
+```python
+from {{ import_name }} import {{ class_name }}
+
+# Load the model (downloads weights automatically)
+model = {{ class_name }}(model_id="ttsds/{{ folder_name }}")
+
+# Synthesize speech
+audio, sample_rate = model.synthesize(
+    text="Hello, this is a test of {{ model_name }}.",
+    reference_audio="path/to/reference.wav",
+{%- if has_text_reference %}
+    text_reference="Transcript of the reference audio.",
+{%- endif %}
+{%- if has_language %}
+    language="{{ language_codes[0] if language_codes else 'eng' }}",
+{%- endif %}
+)
+
+# Save the output
+model.save_audio(audio, sample_rate, "output.wav")
+```
+
+## Model Details
+
+| Property | Value |
+|----------|-------|
+| **Sample Rate** | {{ sample_rate }} Hz |
+| **Parameters** | {{ num_parameters }}M |
+| **Architecture** | {{ architecture | join(", ") }} |
+| **Languages** | {{ language_names | join(", ") }} |
+| **Release Date** | {{ release_date }} |
+
+{% if training_data %}
+### Training Data
+
+{% for dataset in training_data %}
+- [{{ dataset.name }}]({{ dataset.url }}){% if dataset.hours %} ({{ dataset.hours }} hours){% endif %}
+
+{% endfor %}
+{% endif %}
+
+## License
+
+- **Weights:** {{ weights_license_name }}
+- **Code:** {{ code_license_name }}
+
+Please refer to the original repositories for full license terms.
+
+## Links
+
+- **Original Code:** [{{ code_url }}]({{ code_url }})
+- **Original Weights:** [{{ weights_url }}]({{ weights_url }})
+- **TTSDB Package:** [ttsdb-{{ package_name }}](https://pypi.org/project/ttsdb-{{ package_name }}/)
+- **TTSDB GitHub:** [https://github.com/ttsds/ttsdb](https://github.com/ttsds/ttsdb)

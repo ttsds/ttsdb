@@ -1,64 +1,34 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["**/_vendor/**"]
 
-[project]
-name = "ttsds-systems"
-dynamic = ["version"]
-description = ''
-readme = "README.md"
-requires-python = ">=3.8"
-license = "MIT"
-keywords = []
-authors = [
-  { name = "Christoph Minixhofer", email = "christoph.minixhofer@gmail.com" },
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
 ]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-  "docker>=5.0.0",
-  "pyyaml>=5.4.1",
+ignore = [
+  "E501", # line length handled by formatter/line-length
+  "B027", # we use an empty abstract __exit__ method to not force implementing it
+  "UP036", # we use differing python versions for different models
+  "B008", # we use Input from cog for cog_tts
 ]
 
-[project.urls]
-Documentation = "https://github.com/Christoph Minixhofer/ttsds_systems#readme"
-Issues = "https://github.com/Christoph Minixhofer/ttsds_systems/issues"
-Source = "https://github.com/Christoph Minixhofer/ttsds_systems"
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
+"**/tests/**" = ["B018"]
 
-[tool.hatch.version]
-path = "src/ttsds_systems/__about__.py"
 
-[tool.hatch.envs.types]
-extra-dependencies = [
-  "mypy>=1.0.0",
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = [
+  "core",
+  "models",
 ]
-[tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/ttsds_systems tests}"
-
-[tool.coverage.run]
-source_pkgs = ["ttsds_systems", "tests"]
-branch = true
-parallel = true
-omit = [
-  "src/ttsds_systems/__about__.py",
-]
-
-[tool.coverage.paths]
-ttsds_systems = ["src/ttsds_systems", "*/ttsds_systems/src/ttsds_systems"]
-tests = ["tests", "*/ttsds_systems/tests"]
-
-[tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
+markers = [
+  "integration: integration tests that require model weights and/or network",
 ]

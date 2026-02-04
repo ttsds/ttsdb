@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - run: just bootstrap
+      - run: just lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            aria2 \
+            build-essential \
+            cmake \
+            curl \
+            espeak \
+            espeak-ng \
+            festival \
+            ffmpeg \
+            g++-12 \
+            gcc \
+            git \
+            git-lfs \
+            libjpeg-dev \
+            libsm6 \
+            libsndfile1 \
+            libsox-dev \
+            libxext6 \
+            openssh-server \
+            portaudio19-dev \
+            protobuf-compiler \
+            zlib1g-dev \
+            zsh
+        shell: bash
+
+      - name: Bootstrap & test all models
+        run: |
+          just bootstrap
+          just test-ci
+        shell: bash

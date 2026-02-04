@@ -1,0 +1,229 @@
+"""{{ model_name }} - HuggingFace Space Demo
+
+Generated at {{ generated_at }} from {{ generated_from_template }}.
+
+A Gradio interface for {{ model_name }} text-to-speech synthesis.
+"""
+
+import os
+from pathlib import Path
+
+import gradio as gr
+import numpy as np
+
+from {{ import_name }} import {{ class_name }}
+{% if variants %}
+from ttsdb_core.config import ModelConfig
+{% endif %}
+
+
+# Initialize model (downloads weights on first run)
+MODEL_ID = os.environ.get("MODEL_ID", "ttsds/{{ folder_name }}")
+DEFAULT_VARIANT = os.environ.get("MODEL_VARIANT", "{{ default_variant or '' }}")
+{% if variants %}
+
+# Available variants for this model
+AVAILABLE_VARIANTS = {{ variants | tojson }}
+{% endif %}
+
+# Global model instance (will be reloaded on variant change)
+model = None
+
+
+def get_model(variant: str = DEFAULT_VARIANT):
+    """Get or reload the model with the specified variant."""
+    global model
+{% if variants %}
+    current_variant = getattr(model, "variant", None) if model else None
+    if model is None or current_variant != variant:
+        print(f"Loading model variant: {variant}")
+        model = {{ class_name }}(model_id=MODEL_ID, variant=variant or None)
+{% else %}
+    if model is None:
+        model = {{ class_name }}(model_id=MODEL_ID)
+{% endif %}
+    return model
+
+
+# Initialize with default variant
+get_model()
+
+def synthesize(
+    text: str,
+    reference_audio: str,
+    reference_text: str,
+    language: str,
+{% if variants %}
+    variant: str = DEFAULT_VARIANT,
+{% endif %}
+) -> tuple[int, np.ndarray]:
+    """Synthesize speech from text.
+
+    Expects `reference_audio` to be a filepath (Gradio `type="filepath"`).
+    Returns (sample_rate, audio_array) as expected by Gradio.
+    """
+    if not text or not text.strip():
+        raise gr.Error("Please enter some text to synthesize.")
+
+    if not reference_audio or not os.path.exists(reference_audio):
+        raise gr.Error("Please upload a reference audio file.")
+
+    if not reference_text or not reference_text.strip():
+        raise gr.Error("Please enter the transcript of the reference audio.")
+
+{% if variants %}
+    # Get model with selected variant
+    model = get_model(variant)
+{% else %}
+    model = get_model()
+{% endif %}
+
+    audio, sr = model.synthesize(
+        text=text,
+        reference_audio=reference_audio,
+        text_reference=reference_text,
+        language=language,
+    )
+    return (sr, audio)
+
+gr.set_static_paths(paths=["examples"])
+
+# Build the Gradio interface
+with gr.Blocks(title="{{ model_name }} TTS") as demo:
+    # Header
+    gr.Markdown(
+        """
+        # {{ model_name }} Text-to-Speech
+
+{% if description %}
+{% filter indent(width=8) %}
+{{ description }}
+{% endfilter %}
+
+{% else %}
+        Clone any voice with just a few seconds of reference audio.
+{% endif %}
+
+        > **Note:** This demo is not affiliated with or endorsed by the original authors.
+        > It is provided for research and educational purposes only.
+
+        **Links:** [Code]({{ code_url }}){% for url in paper_urls %} | [Paper]({{ url }}){% endfor %}{% if weights_url %} | [Weights]({{ weights_url }}){% endif %}
+        """
+    )
+
+    with gr.Row():
+        with gr.Column():
+            reference_audio = gr.Audio(
+                label="Reference Audio",
+                type="filepath",
+            )
+            reference_text = gr.Textbox(
+                label="Reference Transcript",
+                placeholder="Enter what is being said in the reference audio...",
+                lines=2,
+            )
+            text_input = gr.Textbox(
+                label="Text to Synthesize",
+                placeholder="Enter the text you want to convert to speech...",
+                lines=3,
+            )
+            language = gr.Dropdown(
+                label="Language",
+                choices=[
+{% for name, code in language_choices %}
+                    ("{{ name }}", "{{ code }}"),
+{% endfor %}
+                ],
+                value="{{ language_codes[0] if language_codes else 'eng' }}",
+            )
+{% if variants %}
+            variant = gr.Dropdown(
+                label="Model Variant",
+                choices=AVAILABLE_VARIANTS,
+                value=DEFAULT_VARIANT or AVAILABLE_VARIANTS[0],
+                info="Select model variant/version",
+            )
+{% endif %}
+            submit_btn = gr.Button("Synthesize", variant="primary")
+
+        with gr.Column():
+            output_audio = gr.Audio(
+                label="Synthesized Audio",
+                type="numpy",
+            )
+
+    # Example inputs from test_data.yaml
+    # Assume packaged example audios live under the repository `examples/` folder.
+    _runtime_examples = []
+{% for example in examples %}
+{% if example.reference_audio %}
+    _rel = Path("{{ example.reference_audio }}")
+    _src = Path(__file__).parent / _rel
+    if _src.exists():
+{% if variants %}
+        _runtime_examples.append([_src, "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}", DEFAULT_VARIANT or AVAILABLE_VARIANTS[0]])
+{% else %}
+        _runtime_examples.append([_src, "{{ example.reference_text }}", "{{ example.text }}", "{{ example.language }}"])
+{% endif %}
+{% endif %}
+{% endfor %}
+
+{% if variants %}
+    gr.Examples(
+        examples=_runtime_examples,
+        inputs=[reference_audio, reference_text, text_input, language, variant],
+    )
+
+    submit_btn.click(
+        fn=synthesize,
+        inputs=[text_input, reference_audio, reference_text, language, variant],
+        outputs=[output_audio],
+    )
+{% else %}
+    gr.Examples(
+        examples=_runtime_examples,
+        inputs=[reference_audio, reference_text, text_input, language],
+    )
+
+    submit_btn.click(
+        fn=synthesize,
+        inputs=[text_input, reference_audio, reference_text, language],
+        outputs=[output_audio],
+    )
+{% endif %}
+
+    # Footer with model information and citations
+    gr.Markdown(
+        """
+        ## Model Information
+
+        | Property | Value |
+        |----------|-------|
+        | **Architecture** | {{ architecture | join(", ") }} |
+        | **Sample Rate** | {{ sample_rate }} Hz |
+        | **Parameters** | {{ num_parameters }}M |
+        | **Languages** | {{ language_names | join(", ") }} |{% if release_date %}
+        | **Release Date** | {{ release_date }} |
+{% endif %}
+
+{% if citations %}
+        ## Citations
+
+        If you use this model, please cite the original work:
+
+{% for citation in citations %}
+        ```bibtex
+{% filter indent(width=8) %}
+{{ citation.text }}
+{% endfilter %}
+        ```
+{% endfor %}
+{% endif %}
+        """
+    )
+
+
+if __name__ == "__main__":
+    # HuggingFace Spaces exposes the service via $PORT and requires binding to 0.0.0.0
+    port = int(os.environ.get("PORT", "7860"))
+    demo.launch(server_name="0.0.0.0", server_port=port, share=False, allowed_paths=["examples"])

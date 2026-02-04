@@ -1,0 +1,116 @@
+metadata:
+  name: "F5-TTS"
+  id: "f5-tts"
+  # Markdown description used for README generation.
+  # Tip: use a YAML block scalar (|) to keep formatting.
+  description: |
+    Non-Autoregressive Flow Matching (DiT) text-to-speech model by [Yushen Chen](https://github.com/SWivid).
+  training_data:
+    - id: amphion/Emilia-Dataset
+      name: Emilia Dataset
+      url: https://huggingface.co/datasets/amphion/Emilia-Dataset
+      hours: 100000
+  languages:
+    - eng
+    - zho
+  num_parameters: 335
+  release_date: 2024-10-30
+  target_representation:
+    - Mel
+  sample_rate: 24000
+  architecture:
+    - Non-Autoregressive
+    - Flow Matching
+    - Diffusion Transformer
+dependencies:
+  # Supported Python versions for this model package (PEP 440 specifier string).
+  # Examples:
+  #   ">=3.10,<3.12"   (min/max)
+  #   "==3.10.*"       (pinned minor line)
+  python: ">=3.10,<=3.14"
+  # Optional: explicitly list tested interpreter versions (human-facing).
+  # Note: packaging metadata (`requires-python`) cannot express disjoint sets well,
+  # so keep `python` as a sensible range and use this list for clarity.
+  python_tested:
+    - "3.10"
+  # Concrete interpreter version used by `just setup` when creating a venv.
+  # Override with: `just setup f5-tts python=3.10`
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  # APT packages used by Space Dockerfile. Omit to use default [build-essential, git].
+  system_packages:
+    - build-essential
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+code:
+  url: https://github.com/SWivid/F5-TTS
+  commit: fc0fa67a03a047c5713ac0ca239046d85110efc6
+  # 0fe34a862c4d65d0367456536403e73824737a0f
+  # Upstream repo uses a src/ layout (contains src/f5_tts).
+  # We set this so setup_vendor_path() adds `<vendored_repo>/src` to sys.path.
+  root: src
+  license: mit
+weights:
+  url: https://huggingface.co/SWivid/F5-TTS
+  commit: d6bd6c3c3ec65c0a3ef25a6d3d09658c5e2817fd
+  license: cc-by-nc-4.0
+  # Dependencies from other repos (downloaded to weights/<local_dir>)
+  dependencies:
+    - repo_id: charactr/vocos-mel-24khz
+      local_dir: vocos-mel-24khz
+
+# Model variants - different versions/checkpoints available.
+# Use variant="v1" when initializing F5TTS to use a specific variant.
+# Default variant is used when no variant is specified.
+#
+# Standard directory structure after download (managed by prepare_weights.py):
+#   weights/
+#   ├── shared/           # Common files (vocab, etc.) - always downloaded
+#   ├── base/             # Default variant checkpoint
+#   ├── v1/               # v1 variant checkpoint
+#   └── vocos-mel-24khz/  # Vocoder dependency
+#
+# Note: HF repo subdir mappings (e.g., F5TTS_Base -> base) are defined in
+# prepare_weights.py, not here. Config only contains what differs per variant.
+variants:
+  default: "v1"
+  base: {}   # Original F5-TTS base model
+  v1:        # F5-TTS v1 base model (improved)
+    metadata:
+      release_date: 2025-03-12
+external:
+  citations:
+    - id: f5-tts
+      text: >
+        @inproceedings{f5-tts,
+          title = "F5-{TTS}: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching",
+          author = "Chen, Yushen  and
+            Niu, Zhikang  and
+            Ma, Ziyang  and
+            Deng, Keqi  and
+            Wang, Chunhui  and
+            JianZhao, JianZhao  and
+            Yu, Kai  and
+            Chen, Xie",
+          editor = "Che, Wanxiang  and
+            Nabende, Joyce  and
+            Shutova, Ekaterina  and
+            Pilehvar, Mohammad Taher",
+          booktitle = "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+          month = jul,
+          year = "2025",
+          address = "Vienna, Austria",
+          publisher = "Association for Computational Linguistics",
+          url = "https://aclanthology.org/2025.acl-long.313/",
+          doi = "10.18653/v1/2025.acl-long.313",
+          pages = "6255--6271",
+          ISBN = "979-8-89176-251-0",
+          abstract = "This paper introduces F5-TTS, a fully non-autoregressive text-to-speech system based on flow matching with Diffusion Transformer (DiT). Without requiring complex designs such as duration model, text encoder, and phoneme alignment, the text input is simply padded with filler tokens to the same length as input speech, and then the denoising is performed for speech generation, which was originally proved feasible by E2 TTS. However, the original design of E2 TTS makes it hard to follow due to its slow convergence and low robustness. To address these issues, we first model the input with ConvNeXt to refine the text representation, making it easy to align with the speech. We further propose an inference-time Sway Sampling strategy, which significantly improves our model{'}s performance and efficiency. This sampling strategy for flow step can be easily applied to existing flow matching based models without retraining. Our design allows faster training and achieves an inference RTF of 0.15, which is greatly improved compared to state-of-the-art diffusion-based TTS models. Trained on a public 100K hours multilingual dataset, our F5-TTS exhibits highly natural and expressive zero-shot ability, seamless code-switching capability, and speed control efficiency. We have released all codes and checkpoints to promote community development, at https://SWivid.github.io/F5-TTS/."
+        }
+  paper_urls:
+    - https://aclanthology.org/2025.acl-long.313/

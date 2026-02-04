@@ -1,0 +1,35 @@
+{
+  "model_id": "fish-speech",
+  "passed": true,
+  "timestamp": "2026-02-03T16:23:29Z",
+  "variants_tested": [
+    "1.5",
+    "s1-mini"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 22,
+  "artifacts": [
+    "1.5/ara_test_001.wav",
+    "1.5/deu_test_001.wav",
+    "1.5/eng_test_001.wav",
+    "1.5/fra_test_001.wav",
+    "1.5/ita_test_001.wav",
+    "1.5/jpn_test_001.wav",
+    "1.5/kor_test_001.wav",
+    "1.5/nld_test_001.wav",
+    "1.5/pol_test_001.wav",
+    "1.5/spa_test_001.wav",
+    "1.5/zho_test_001.wav",
+    "s1-mini/ara_test_001.wav",
+    "s1-mini/deu_test_001.wav",
+    "s1-mini/eng_test_001.wav",
+    "s1-mini/fra_test_001.wav",
+    "s1-mini/ita_test_001.wav",
+    "s1-mini/jpn_test_001.wav",
+    "s1-mini/kor_test_001.wav",
+    "s1-mini/nld_test_001.wav",
+    "s1-mini/pol_test_001.wav",
+    "s1-mini/spa_test_001.wav",
+    "s1-mini/zho_test_001.wav"
+  ]
+}

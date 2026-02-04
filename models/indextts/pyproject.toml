@@ -1,0 +1,91 @@
+# Generated at 2026-02-03T00:00:00Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_indextts"
+version = "0.1.0"
+description = "IndexTTS model for TTSDB"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "torchcodec>=0.5.0",
+    "numpy==1.26.2",
+    "soundfile>=0.10.0",
+    "librosa==0.10.2.post1",
+    "omegaconf>=2.3.0",
+    "safetensors==0.5.2",
+    "sentencepiece>=0.2.1",
+    "tokenizers==0.21.0",
+    "transformers==4.52.1",
+    "modelscope==1.27.0",
+    "matplotlib==3.8.2",
+    "pandas==2.3.2",
+    "tqdm>=4.67.1",
+    "einops>=0.8.1",
+    "json5==0.10.0",
+    "cn2an==0.5.22",
+    "jieba==0.42.1",
+    "textstat>=0.7.10",
+    "ffmpeg-python==0.2.0",
+    "g2p-en==2.1.0",
+    "munch==4.0.0",
+    "numba==0.58.1",
+    "accelerate==1.8.1",
+    "descript-audiotools==0.7.2",
+    "WeTextProcessing; sys_platform == 'linux'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_indextts"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_indextts/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_indextts/config.yaml"
+"src/ttsdb_indextts/_vendor/source" = "ttsdb_indextts/_vendor/source"

@@ -1,0 +1,21 @@
+# Generated at 2026-02-03T00:00:00Z from templates/init/.gitignore.j2
+
+# Vendored external code (fetched at build time)
+src/*/_vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp

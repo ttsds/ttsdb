@@ -1,0 +1,18 @@
+{
+  "model_id": "vevo",
+  "passed": false,
+  "timestamp": "2026-02-03T20:28:06Z",
+  "variants_tested": [
+    "vevo1.5"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 6,
+  "artifacts": [
+    "vevo1.5/deu_test_001.wav",
+    "vevo1.5/eng_test_001.wav",
+    "vevo1.5/fra_test_001.wav",
+    "vevo1.5/jpn_test_001.wav",
+    "vevo1.5/kor_test_001.wav",
+    "vevo1.5/zho_test_001.wav"
+  ]
+}

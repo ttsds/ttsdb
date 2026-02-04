@@ -1,0 +1,94 @@
+metadata:
+  name: "HierSpeech"
+  id: "hierspeech"
+  description: |
+    HierSpeech++ zero-shot speech synthesis with hierarchical variational
+    inference, supporting English/Korean and LibriTTS-only checkpoints.
+  training_data:
+    - id: libritts
+      name: LibriTTS
+    - id: librilight
+      name: LibriLight
+    - id: expresso
+      name: Expresso
+    - id: msss
+      name: MSSS
+    - id: nikl
+      name: NIKL
+  languages:
+    - eng
+    - kor
+  num_parameters: 204
+  release_date: 2023-11-08
+  target_representation:
+    - Waveform
+  sample_rate: 16000
+  architecture:
+    - Non-Autoregressive
+    - Grapheme-to-Phoneme
+    - Prosody Prediction
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=1.13.1"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - espeak
+    - espeak-ng
+    - festival
+code:
+  url: https://github.com/sh-lee-prml/HierSpeechpp
+  commit: main
+  root: .
+  license: mit
+weights:
+  url: https://huggingface.co/ttsds/hierspeechpp_1
+  commit: main
+  license: cc-by-nc-4.0
+variants:
+  default: v1.1
+  v1:
+    metadata:
+      release_date: 2023-11-08
+      languages:
+        - eng
+        - kor
+  v1.1:
+    metadata:
+      release_date: 2023-11-20
+      languages:
+        - eng
+        - kor
+  lt460:
+    metadata:
+      release_date: 2023-11-08
+      languages:
+        - eng
+  lt960:
+    metadata:
+      release_date: 2023-11-08
+      languages:
+        - eng
+external:
+  citations:
+    - id: hierspeechpp
+      text: >
+        @article{lee2023hierspeech++,
+          title={Hierspeech++: Bridging the gap between semantic and acoustic representation of speech by hierarchical variational inference for zero-shot speech synthesis},
+          author={Lee, Sang-Hoon and Choi, Ha-Yeong and Kim, Seung-Bin and Lee, Seong-Whan},
+          journal={arXiv preprint arXiv:2311.12454},
+          year={2023}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2311.12454
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference

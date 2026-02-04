@@ -1,0 +1,18 @@
+{
+  "model_id": "maskgct",
+  "passed": true,
+  "timestamp": "2026-02-02T09:20:32Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 6,
+  "artifacts": [
+    "default/deu_test_001.wav",
+    "default/eng_test_001.wav",
+    "default/fra_test_001.wav",
+    "default/jpn_test_001.wav",
+    "default/kor_test_001.wav",
+    "default/zho_test_001.wav"
+  ]
+}

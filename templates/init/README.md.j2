@@ -1,0 +1,46 @@
+<!-- Generated at {{ generated_at }} from {{ generated_from_template }} -->
+
+# {{ model_name }}
+
+The model description is sourced from `config.yaml` (`metadata.description`).
+{% if description %}
+
+{{ description }}
+{% endif %}
+
+## Installation
+
+```bash
+pip install {{ import_name }}
+```
+
+## Usage
+
+```python
+from {{ import_name }} import {{ class_name }}
+
+model = {{ class_name }}(model_id="{{ hf_model_id }}")
+audio, sr = model.synthesize(
+    text="Hello, world!",
+    reference_audio="path/to/reference.wav"
+)
+```
+
+## Audio Examples
+
+Generated audio samples from integration tests:
+
+| Language | Text | Audio |
+|----------|------|-------|
+{%- set langs = (language_codes | default(["eng"])) %}
+{%- if "eng" in langs %}
+| English | "With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good." | [audio_examples/eng_test_001.wav](https://github.com/ttsds/ttsdb/raw/refs/heads/v2/models/{{ folder_name }}/audio_examples/eng_test_001.wav) |
+{%- endif %}
+{%- if "zho" in langs %}
+| Chinese | "視野無限廣，窗外有藍天" | [audio_examples/zho_test_001.wav](https://github.com/ttsds/ttsdb/raw/refs/heads/v2/models/{{ folder_name }}/audio_examples/zho_test_001.wav) |
+{%- endif %}
+
+To regenerate examples, run:
+```bash
+just test-integration {{ folder_name }}
+```

@@ -1,0 +1,14 @@
+{
+  "model_id": "e2-tts",
+  "passed": true,
+  "timestamp": "2026-02-02T08:55:11Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 2,
+  "artifacts": [
+    "default/eng_test_001.wav",
+    "default/zho_test_001.wav"
+  ]
+}

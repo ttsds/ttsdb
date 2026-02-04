@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-02-02T09:22:49Z",
+  "overall_passed": true,
+  "any_run": true,
+  "models": [
+    {
+      "model_id": "e2-tts",
+      "passed": true,
+      "timestamp": "2026-02-02T08:55:11Z",
+      "variants_tested": [
+        "default"
+      ],
+      "variants_filter": null,
+      "artifacts_count": 2,
+      "artifacts": [
+        "default/eng_test_001.wav",
+        "default/zho_test_001.wav"
+      ]
+    },
+    {
+      "model_id": "f5-tts",
+      "passed": true,
+      "timestamp": "2026-02-02T08:56:09Z",
+      "variants_tested": [
+        "base",
+        "v1"
+      ],
+      "variants_filter": null,
+      "artifacts_count": 4,
+      "artifacts": [
+        "base/eng_test_001.wav",
+        "base/zho_test_001.wav",
+        "v1/eng_test_001.wav",
+        "v1/zho_test_001.wav"
+      ]
+    },
+    {
+      "model_id": "gpt-sovits",
+      "passed": true,
+      "timestamp": "2026-02-02T09:06:39Z",
+      "variants_tested": [
+        "v1",
+        "v2",
+        "v3",
+        "v4"
+      ],
+      "variants_filter": null,
+      "artifacts_count": 18,
+      "artifacts": [
+        "v1/eng_test_001.wav",
+        "v1/jpn_test_001.wav",
+        "v1/zho_test_001.wav",
+        "v2/eng_test_001.wav",
+        "v2/jpn_test_001.wav",
+        "v2/kor_test_001.wav",
+        "v2/yue_test_001.wav",
+        "v2/zho_test_001.wav",
+        "v3/eng_test_001.wav",
+        "v3/jpn_test_001.wav",
+        "v3/kor_test_001.wav",
+        "v3/yue_test_001.wav",
+        "v3/zho_test_001.wav",
+        "v4/eng_test_001.wav",
+        "v4/jpn_test_001.wav",
+        "v4/kor_test_001.wav",
+        "v4/yue_test_001.wav",
+        "v4/zho_test_001.wav"
+      ]
+    },
+    {
+      "model_id": "maskgct",
+      "passed": true,
+      "timestamp": "2026-02-02T09:20:32Z",
+      "variants_tested": [
+        "default"
+      ],
+      "variants_filter": null,
+      "artifacts_count": 6,
+      "artifacts": [
+        "default/deu_test_001.wav",
+        "default/eng_test_001.wav",
+        "default/fra_test_001.wav",
+        "default/jpn_test_001.wav",
+        "default/kor_test_001.wav",
+        "default/zho_test_001.wav"
+      ]
+    },
+    {
+      "model_id": "tortoise",
+      "passed": true,
+      "timestamp": "2026-02-02T09:22:46Z",
+      "variants_tested": [
+        "default"
+      ],
+      "variants_filter": null,
+      "artifacts_count": 2,
+      "artifacts": [
+        "default/eng_test_001.wav",
+        "eng_test_001.wav"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+# Generated at 2026-01-29T19:21:50Z from templates/init/pyproject.toml.j2
+
+[project]
+name = "ttsdb_tortoise"
+version = "0.1.1"
+description = "Tortoise model for TTSDB"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "ttsdb-core>=0.1.4",
+    "numpy<2",
+    "torchdiffeq",
+    "tqdm",
+    "rotary_embedding_torch",
+    "inflect",
+    "einops==0.4.1",
+    "progressbar33",
+    "Unidecode",
+    "scipy",
+    "tokenizers",
+    "transformers==4.31.0",
+    "librosa==0.9.1",
+    "numba",
+    "llvmlite",
+    "appdirs",
+    "pydantic==1.9.1",
+    "psutil",
+    "hjson",
+    "py-cpuinfo",
+    "soundfile",
+    "huggingface-hub",
+    "setuptools"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ttsdb_tortoise"]
+include = [
+    # Include vendored upstream research code in wheels
+    "src/ttsdb_tortoise/_vendor/**",
+]
+exclude = [
+    # Exclude non-package directories
+    "weights/",
+    "audio_examples/",
+    "space/",
+    "tests/",
+    "scripts/",
+    # Exclude model weight files
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "weights/",
+    "audio_examples/",
+    "space/",
+    ".venv/",
+    "dist/",
+    "*.safetensors",
+    "*.bin",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.h5",
+    "*.onnx",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.build.targets.wheel.force-include]
+"config.yaml" = "ttsdb_tortoise/config.yaml"
+"src/ttsdb_tortoise/_vendor/source" = "ttsdb_tortoise/_vendor/source"

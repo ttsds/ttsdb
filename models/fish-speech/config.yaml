@@ -1,0 +1,107 @@
+metadata:
+  name: "Fish Speech"
+  id: "fish-speech"
+  description: |
+    Multilingual TTS system that combines a text-to-semantic LLM with a
+    neural audio codec decoder for expressive, zero-shot voice cloning.
+  training_data: null
+  languages:
+    - eng
+    - zho
+    - deu
+    - jpn
+    - fra
+    - spa
+    - kor
+    - ara
+    - rus
+    - nld
+    - ita
+    - pol
+    - por
+  num_parameters: 500
+  release_date: 2024-07-02
+  target_representation:
+    - Codec
+    - Quantized Mel Tokens
+  sample_rate: 44100
+  architecture:
+    - Autoregressive
+    - Dual Autoregressive
+    - Language Model
+dependencies:
+  python: "==3.11.*"
+  python_tested:
+    - "3.11"
+  python_venv: "3.11"
+  torch: ">=2.0.0"
+  system_packages:
+    - git
+    - curl
+    - git-lfs
+    - cmake
+    - gcc
+    - g++-12
+    - build-essential
+    - libsox-dev
+    - ffmpeg
+    - libsm6
+    - libxext6
+    - libjpeg-dev
+    - zlib1g-dev
+    - aria2
+    - zsh
+    - openssh-server
+    - protobuf-compiler
+    - portaudio19-dev
+code:
+  url: https://github.com/fishaudio/fish-speech
+  commit: d3df50503b36314a964f66cac1af1e19e95bcfa3
+  root: .
+  extra_paths:
+    - tools
+  license: apache-2.0
+weights:
+  url: https://huggingface.co/fishaudio/fish-speech-1.5
+  commit: main
+  license: cc-by-nc-4.0
+variants:
+  default: "s1-mini"
+  "s1-mini":
+    metadata:
+      release_date: 2025-05-31
+      num_parameters: 500
+      languages:
+        - eng
+        - zho
+        - deu
+        - jpn
+        - fra
+        - spa
+        - kor
+        - ara
+        - rus
+        - nld
+        - ita
+        - pol
+        - por
+external:
+  citations:
+    - id: fish-speech
+      text: >
+        @misc{fish-speech,
+          title={Fish-Speech: Leveraging Large Language Models for Advanced Multilingual Text-to-Speech Synthesis},
+          author={Shijia Liao and Yuxuan Wang and Tianyu Li and Yifan Cheng and Ruoyi Zhang and Rongzhi Zhou and Yijin Xing},
+          year={2024},
+          eprint={2411.01156},
+          archivePrefix={arXiv},
+          primaryClass={cs.SD},
+          url={https://arxiv.org/abs/2411.01156}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2411.01156
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference

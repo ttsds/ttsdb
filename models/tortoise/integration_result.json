@@ -1,0 +1,14 @@
+{
+  "model_id": "tortoise",
+  "passed": true,
+  "timestamp": "2026-02-02T09:22:46Z",
+  "variants_tested": [
+    "default"
+  ],
+  "variants_filter": null,
+  "artifacts_count": 2,
+  "artifacts": [
+    "default/eng_test_001.wav",
+    "eng_test_001.wav"
+  ]
+}

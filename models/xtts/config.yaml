@@ -1,0 +1,102 @@
+metadata:
+  name: "XTTS"
+  id: "xtts"
+  description: |
+    Massively multilingual zero-shot TTS model based on VQ-VAE and
+    autoregressive language modeling, using the maintained idiap fork.
+  training_data:
+    - id: libritts
+      name: LibriTTS
+    - id: commonvoice
+      name: CommonVoice
+  languages:
+    - eng
+    - spa
+    - fra
+    - deu
+    - ita
+    - por
+    - pol
+    - tur
+    - rus
+    - nld
+    - ces
+    - ara
+    - zho
+    - hun
+    - hin
+  num_parameters: 466
+  release_date: 2023-12-01
+  target_representation:
+    - VQ-VAE
+  sample_rate: 24000
+  architecture:
+    - Autoregressive
+    - Language Model
+    - VQ-VAE
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - build-essential
+    - g++-12
+    - espeak-ng
+package:
+  pypi:
+    name: coqui-tts
+    version: "0.25.3"
+code:
+  url: https://github.com/idiap/coqui-ai-TTS
+  commit: 36c6ff800bb4b39956dce2fb044e109c855359c6
+  root: .
+  license: mpl
+weights:
+  url: https://huggingface.co/coqui/XTTS-v2
+  commit: main
+  license: other
+variants:
+  default: v2
+  v2:
+    metadata:
+      release_date: 2023-12-01
+      languages:
+        - eng
+        - spa
+        - fra
+        - deu
+        - ita
+        - por
+        - pol
+        - tur
+        - rus
+        - nld
+        - ces
+        - ara
+        - zho
+        - hun
+        - hin
+external:
+  citations:
+    - id: xtts
+      text: >
+        @article{casanova2024xtts,
+          title={Xtts: a massively multilingual zero-shot text-to-speech model},
+          author={Casanova, Edresson and Davis, Kelly and G\"olge, Eren and G\"oknar, G\"orkem and Gulea, Iulian and Hart, Logan and Aljafari, Aya and Meyer, Joshua and Morais, Reuben and Olayemi, Samuel and others},
+          journal={arXiv preprint arXiv:2406.04904},
+          year={2024}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2406.04904
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    language: language

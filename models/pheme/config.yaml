@@ -1,0 +1,82 @@
+metadata:
+  name: "Pheme"
+  id: "pheme"
+  description: |
+    Efficient conversational speech generation with a text-to-semantic (T2S)
+    model and a semantic-to-acoustic (S2A) model, backed by a speech tokenizer.
+  training_data:
+    - id: gigaspeech
+      name: GigaSpeech
+    - id: mls
+      name: MLS
+    - id: libritts
+      name: LibriTTS
+  languages:
+    - eng
+  num_parameters: 300
+  release_date: 2024-01-01
+  target_representation:
+    - Codec
+  sample_rate: 16000
+  architecture:
+    - Autoregressive
+    - Non-Autoregressive
+    - Language Model
+    - Grapheme-to-Phoneme
+dependencies:
+  python: "==3.10.*"
+  python_tested:
+    - "3.10"
+  python_venv: "3.10"
+  torch: ">=2.0.0"
+  system_packages:
+    - build-essential
+    - git
+    - git-lfs
+    - libsox-dev
+    - ffmpeg
+    - gcc
+    - g++-12
+    - espeak-ng
+code:
+  url: https://github.com/PolyAI-LDN/pheme
+  commit: a0b73f9379fd55a069842ff2c3c48ec0fd0bdc6a
+  root: .
+  license: apache-2.0
+weights:
+  url: https://huggingface.co/PolyAI/pheme
+  commit: main
+  license: cc-by-nc-4.0
+  dependencies:
+    - repo_id: fnlp/SpeechTokenizer
+      local_dir: speechtokenizer
+    - repo_id: fnlp/USLM
+      local_dir: uslm
+    - repo_id: pyannote/embedding
+      local_dir: pyannote_embedding
+variants:
+  default: base
+  base: {}
+  small:
+    metadata:
+      num_parameters: 150
+      release_date: 2024-01-01
+external:
+  citations:
+    - id: pheme
+      text: >
+        @misc{budzianowski2024pheme,
+          title={Pheme: Efficient and Conversational Speech Generation},
+          author={Paweł Budzianowski and Taras Sereda and Tomasz Cichy and Ivan Vulić},
+          year={2024},
+          eprint={2401.02839},
+          archivePrefix={arXiv},
+          primaryClass={eess.AS}
+        }
+  paper_urls:
+    - https://arxiv.org/abs/2401.02839
+api:
+  parameters:
+    text: text
+    speaker_reference: speaker_reference
+    text_reference: text_reference
