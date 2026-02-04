@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -600,6 +601,11 @@ def run(args: argparse.Namespace) -> int:
 
         for model_id, model_jobs in jobs_by_model.items():
             model_dir = MODELS_DIR / model_id
+            model_output_dir = output_dir / model_id
+            expected_outputs = [output_dir / job.output_relpath for job in model_jobs]
+            if expected_outputs and all(path.exists() for path in expected_outputs):
+                print(f"Skipping {model_id}: all outputs already exist in {model_output_dir}")
+                continue
             venv_python = _ensure_model_ready(model_dir, args.recreate_venv)
             shards = _split_jobs(model_jobs, gpu_ids)
             processes: list[dict[str, Any]] = []
@@ -670,10 +676,198 @@ def run(args: argparse.Namespace) -> int:
 
 def show_status(args: argparse.Namespace) -> int:
     status_path = Path(args.output_dir) / "status.json"
-    status = _load_status(status_path)
-    _update_summary(status)
-    summary = status.get("summary", {})
-    print(json.dumps(summary, indent=2))
+    try:
+        from rich.align import Align
+        from rich.console import Console, Group
+        from rich.live import Live
+        from rich.panel import Panel
+        from rich.progress import BarColumn, Progress, TextColumn
+        from rich.table import Table
+    except Exception:
+        status = _load_status(status_path)
+        _update_summary(status)
+        summary = status.get("summary", {})
+        print(json.dumps(summary, indent=2))
+        return 0
+
+    console = Console()
+    output_dir = Path(args.output_dir)
+
+    def _apply_output_exists(status: dict[str, Any]) -> bool:
+        changed = False
+        for job in status.get("jobs", {}).values():
+            output_relpath = job.get("output_relpath")
+            if not output_relpath:
+                continue
+            output_path = output_dir / output_relpath
+            if output_path.exists() and job.get("status") != "completed":
+                job["status"] = "completed"
+                job["skipped"] = "output_exists"
+                changed = True
+        return changed
+
+    def _compute_model_stats(status: dict[str, Any]) -> list[dict[str, Any]]:
+        stats: dict[str, dict[str, int]] = {}
+        for job in status.get("jobs", {}).values():
+            model_id = job.get("model_id") or "unknown"
+            model = stats.setdefault(
+                model_id, {"total": 0, "completed": 0, "failed": 0, "pending": 0}
+            )
+            model["total"] += 1
+            state = job.get("status") or "pending"
+            if state == "completed":
+                model["completed"] += 1
+            elif state == "failed":
+                model["failed"] += 1
+            else:
+                model["pending"] += 1
+        rows = []
+        for model_id, model in stats.items():
+            total = model["total"]
+            completed = model["completed"]
+            failed = model["failed"]
+            pending = model["pending"]
+            percent = (completed / total * 100.0) if total else 0.0
+            rows.append(
+                {
+                    "model_id": model_id,
+                    "total": total,
+                    "completed": completed,
+                    "failed": failed,
+                    "pending": pending,
+                    "percent": percent,
+                }
+            )
+        return sorted(rows, key=lambda item: item["model_id"])
+
+    def _compute_gpu_stats() -> list[dict[str, Any]]:
+        shard_dir = output_dir / ".shards"
+        if not shard_dir.exists():
+            return []
+        totals: dict[str, int] = {}
+        done: dict[str, int] = {}
+        completed: dict[str, int] = {}
+        failed: dict[str, int] = {}
+
+        for shard_path in shard_dir.glob("*_gpu*.json"):
+            name = shard_path.stem
+            if name.endswith("_results"):
+                continue
+            parts = name.rsplit("_gpu", 1)
+            if len(parts) != 2:
+                continue
+            gpu_id = parts[1]
+            try:
+                with shard_path.open() as f:
+                    shard_jobs = json.load(f)
+            except Exception:
+                shard_jobs = []
+            totals[gpu_id] = totals.get(gpu_id, 0) + len(shard_jobs)
+
+            results_path = shard_path.with_name(f"{shard_path.stem}_results.json")
+            if results_path.exists():
+                try:
+                    with results_path.open() as f:
+                        results = json.load(f)
+                except Exception:
+                    results = []
+                done[gpu_id] = done.get(gpu_id, 0) + len(results)
+                completed[gpu_id] = completed.get(gpu_id, 0) + sum(
+                    1 for r in results if r.get("status") == "completed"
+                )
+                failed[gpu_id] = failed.get(gpu_id, 0) + sum(
+                    1 for r in results if r.get("status") == "failed"
+                )
+
+        rows = []
+        for gpu_id in sorted(totals, key=lambda item: int(item) if item.isdigit() else item):
+            rows.append(
+                {
+                    "gpu_id": gpu_id,
+                    "total": totals.get(gpu_id, 0),
+                    "done": done.get(gpu_id, 0),
+                    "completed": completed.get(gpu_id, 0),
+                    "failed": failed.get(gpu_id, 0),
+                }
+            )
+        return rows
+
+    def _render() -> Group:
+        status = _load_status(status_path)
+        changed = _apply_output_exists(status)
+        _update_summary(status)
+        summary = status.get("summary", {})
+        if changed and args.reconcile:
+            _write_status(status_path, status)
+
+        status_mtime = None
+        if status_path.exists():
+            status_mtime = datetime.fromtimestamp(status_path.stat().st_mtime, timezone.utc)
+
+        summary_table = Table(title="Overall")
+        summary_table.add_column("Total", justify="right")
+        summary_table.add_column("Completed", justify="right")
+        summary_table.add_column("Failed", justify="right")
+        summary_table.add_column("Pending", justify="right")
+        summary_table.add_row(
+            str(summary.get("total", 0)),
+            str(summary.get("completed", 0)),
+            str(summary.get("failed", 0)),
+            str(summary.get("pending", 0)),
+        )
+        if status_mtime:
+            summary_table.caption = (
+                f"Output dir: {output_dir} | status.json updated: {status_mtime.isoformat()}"
+            )
+
+        overall_done = summary.get("completed", 0) + summary.get("failed", 0)
+        progress = Progress(
+            TextColumn("{task.description}"),
+            BarColumn(),
+            TextColumn("{task.completed}/{task.total}"),
+        )
+        progress.add_task("Overall progress", total=summary.get("total", 0), completed=overall_done)
+
+        gpu_stats = _compute_gpu_stats()
+        for gpu in gpu_stats:
+            progress.add_task(
+                f"GPU {gpu['gpu_id']}",
+                total=gpu["total"],
+                completed=gpu["done"],
+            )
+
+        model_table = Table(title="Per-model")
+        model_table.add_column("Model")
+        model_table.add_column("Completed", justify="right")
+        model_table.add_column("Failed", justify="right")
+        model_table.add_column("Pending", justify="right")
+        model_table.add_column("Total", justify="right")
+        model_table.add_column("Done%", justify="right")
+
+        for row in _compute_model_stats(status):
+            model_table.add_row(
+                row["model_id"],
+                str(row["completed"]),
+                str(row["failed"]),
+                str(row["pending"]),
+                str(row["total"]),
+                f"{row['percent']:.1f}%",
+            )
+
+        return Group(
+            Panel(summary_table),
+            Panel(progress, title="Progress"),
+            Panel(Align.left(model_table)),
+        )
+
+    if args.watch:
+        refresh_rate = max(0.1, 1.0 / max(args.interval, 0.1))
+        with Live(_render(), console=console, refresh_per_second=refresh_rate) as live:
+            while True:
+                time.sleep(args.interval)
+                live.update(_render())
+    else:
+        console.print(_render())
     return 0
 
 
@@ -714,6 +908,22 @@ def main() -> int:
     status_parser = subparsers.add_parser("status", help="Show progress")
     status_parser.add_argument(
         "--output-dir", default=str(ROOT_DIR / "outputs" / "dataset"), help="Output directory"
+    )
+    status_parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Refresh status continuously",
+    )
+    status_parser.add_argument(
+        "--interval",
+        type=float,
+        default=2.0,
+        help="Refresh interval in seconds when using --watch",
+    )
+    status_parser.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="Mark outputs that exist on disk as completed in status.json",
     )
     status_parser.set_defaults(func=show_status)
 

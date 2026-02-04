@@ -31,9 +31,6 @@ just synth-dataset run --all-models --gpus 0,1
 # Run with a custom dataset YAML (pairs or test_data format)
 just synth-dataset run --dataset assets/example_dataset.yaml --models vibevoice xtts --gpus 0
 
-# Folder-based pairs (suffix -01 as reference, -02 as target)
-just synth-dataset run --dataset-folder ../sap_readable --language eng --gpus 0,1
-
 # Check progress
 just synth-dataset status
 ```
