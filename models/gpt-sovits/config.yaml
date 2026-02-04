@@ -65,7 +65,7 @@ weights:
 # v3: DiT-based s2 (2024/2025) - 7k hours, improved zero-shot, 24k output
 # v4: Custom vocoder (2025) - fixes v3 artifacts, native 48k output
 variants:
-  default: "v1"
+  default: "v4"
   v1:
     metadata:
       release_date: 2024-01-16

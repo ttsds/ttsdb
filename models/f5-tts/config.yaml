@@ -78,7 +78,7 @@ weights:
 # Note: HF repo subdir mappings (e.g., F5TTS_Base -> base) are defined in
 # prepare_weights.py, not here. Config only contains what differs per variant.
 variants:
-  default: "base"
+  default: "v1"
   base: {}   # Original F5-TTS base model
   v1:        # F5-TTS v1 base model (improved)
     metadata:
