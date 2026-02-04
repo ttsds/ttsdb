@@ -321,18 +321,44 @@ class Pheme(VoiceCloningTTSBase):
         elif (base / "generation_config.json").exists():
             generation_config_dir = base
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        force_cpu = os.environ.get("PHEME_FORCE_CPU", "").lower() in {"1", "true", "yes"}
+        device = torch.device("cpu")
+        if torch.cuda.is_available() and not force_cpu:
+            try:
+                major, _minor = torch.cuda.get_device_capability()
+                if major >= 7:
+                    device = torch.device("cuda")
+            except Exception:
+                device = torch.device("cuda")
 
-        self.engine = _PhemeEngine(
-            text_tokens_file=text_tokens_file,
-            t2s_path=t2s_path,
-            generation_config_dir=generation_config_dir,
-            s2a_path=s2a_path,
-            sp_tokenizer_dir=sp_tokenizer_dir,
-            pyannote_model_path=pyannote_model_path,
-            device=device,
-            target_sample_rate=self.SAMPLE_RATE,
-        )
+        try:
+            self.engine = _PhemeEngine(
+                text_tokens_file=text_tokens_file,
+                t2s_path=t2s_path,
+                generation_config_dir=generation_config_dir,
+                s2a_path=s2a_path,
+                sp_tokenizer_dir=sp_tokenizer_dir,
+                pyannote_model_path=pyannote_model_path,
+                device=device,
+                target_sample_rate=self.SAMPLE_RATE,
+            )
+        except RuntimeError as exc:
+            if device.type == "cuda" and "no kernel image" in str(exc).lower():
+                device = torch.device("cpu")
+                self.engine = _PhemeEngine(
+                    text_tokens_file=text_tokens_file,
+                    t2s_path=t2s_path,
+                    generation_config_dir=generation_config_dir,
+                    s2a_path=s2a_path,
+                    sp_tokenizer_dir=sp_tokenizer_dir,
+                    pyannote_model_path=pyannote_model_path,
+                    device=device,
+                    target_sample_rate=self.SAMPLE_RATE,
+                )
+            else:
+                raise
+
+        self.device = device
 
         self.t2s = self.engine.t2s
         self.s2a = self.engine.s2a

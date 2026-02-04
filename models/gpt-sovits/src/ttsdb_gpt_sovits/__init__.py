@@ -116,6 +116,33 @@ class GPTSoVITS(VoiceCloningTTSBase):
         variant: str | None = None,
         **kwargs,
     ):
+        try:
+            from transformers import configuration_utils as _tf_config
+
+            if not hasattr(_tf_config, "PreTrainedConfig") and hasattr(
+                _tf_config, "PretrainedConfig"
+            ):
+                _tf_config.PreTrainedConfig = _tf_config.PretrainedConfig
+        except Exception:
+            pass
+
+        try:
+            import soundfile as sf
+
+            if not hasattr(sf, "_ttsdb_safe_write"):
+                _orig_write = sf.write
+
+                def _safe_write(file, data, samplerate, *args, **kwargs):
+                    arr = np.asarray(data)
+                    if arr.dtype not in (np.float32, np.float64, np.int16, np.int32):
+                        arr = arr.astype(np.float32)
+                    return _orig_write(file, arr, samplerate, *args, **kwargs)
+
+                sf.write = _safe_write
+                sf._ttsdb_safe_write = True
+        except Exception:
+            pass
+
         self._version: str = "v1"
         self._is_half: bool = True
         self._weights_base: str | None = None
@@ -639,7 +666,10 @@ class GPTSoVITS(VoiceCloningTTSBase):
         # Save reference audio to temp file for loading
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             tmp_path = tmp.name
-            sf.write(tmp_path, reference_audio, reference_sample_rate)
+            ref_audio = np.asarray(reference_audio)
+            if ref_audio.dtype not in (np.float32, np.float64, np.int16, np.int32):
+                ref_audio = ref_audio.astype(np.float32)
+            sf.write(tmp_path, ref_audio, reference_sample_rate)
 
         try:
             # 1) Extract semantic codes from reference audio
@@ -787,14 +817,15 @@ class GPTSoVITS(VoiceCloningTTSBase):
         tgt_sr = 24000 if self._version == "v3" else 32000
         if ref_sr != tgt_sr:
             # Resample using librosa
-            ref_audio_np = ref_audio[0].cpu().numpy()
+            ref_audio_np = ref_audio[0].float().cpu().numpy()
             ref_audio_np = librosa.resample(ref_audio_np, orig_sr=ref_sr, target_sr=tgt_sr)
             ref_audio = torch.from_numpy(ref_audio_np).unsqueeze(0).to(self.device).to(dtype)
 
-        # Compute mel spectrogram of reference audio
+        # Compute mel spectrogram of reference audio (force float32 for FFT safety)
+        mel_input = ref_audio.float()
         if self._version == "v3":
             mel2 = mel_spectrogram_torch(
-                ref_audio,
+                mel_input,
                 n_fft=1024,
                 win_size=1024,
                 hop_size=256,
@@ -806,7 +837,7 @@ class GPTSoVITS(VoiceCloningTTSBase):
             )
         else:  # v4
             mel2 = mel_spectrogram_torch(
-                ref_audio,
+                mel_input,
                 n_fft=1280,
                 win_size=1280,
                 hop_size=320,
@@ -816,6 +847,8 @@ class GPTSoVITS(VoiceCloningTTSBase):
                 fmax=None,
                 center=False,
             )
+
+        mel2 = mel2.to(dtype)
 
         # Normalize mel
         spec_min, spec_max = -12, 2

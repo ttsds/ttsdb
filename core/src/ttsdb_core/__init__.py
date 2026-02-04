@@ -143,7 +143,7 @@ class VoiceCloningTTSBase(ABC):
         if AutoTokenizer is not None:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(str(load_path))
-            except (OSError, ValueError, TypeError, ImportError):
+            except (OSError, ValueError, TypeError, ImportError, RuntimeError):
                 self.tokenizer = None
         else:
             self.tokenizer = None
@@ -151,7 +151,7 @@ class VoiceCloningTTSBase(ABC):
         if AutoProcessor is not None:
             try:
                 self.processor = AutoProcessor.from_pretrained(str(load_path))
-            except (OSError, ValueError, TypeError, ImportError):
+            except (OSError, ValueError, TypeError, ImportError, RuntimeError):
                 self.processor = None
         else:
             self.processor = None
@@ -363,6 +363,9 @@ class VoiceCloningTTSBase(ABC):
         """
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        audio = np.asarray(audio)
+        if audio.dtype not in (np.float32, np.float64, np.int16, np.int32):
+            audio = audio.astype(np.float32)
         sf.write(str(output_path), audio, sample_rate, format=format)
 
     def to(self, device: str | torch.device):
