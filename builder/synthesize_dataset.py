@@ -441,16 +441,38 @@ def _ensure_whisper(model_name: str):
     try:
         import whisper  # type: ignore
 
-        return whisper.load_model(model_name)
-    except Exception:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "openai-whisper"],
-            cwd=ROOT_DIR,
-            check=True,
-        )
-        import whisper  # type: ignore
+        return whisper.load_model(model_name, device="cpu")
+    except Exception as exc:
+        try:
+            subprocess.run(
+                [sys.executable, "-c", "import pip"],
+                cwd=ROOT_DIR,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            subprocess.run(
+                [sys.executable, "-m", "ensurepip", "--upgrade"],
+                cwd=ROOT_DIR,
+                check=True,
+            )
 
-        return whisper.load_model(model_name)
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "openai-whisper"],
+                cwd=ROOT_DIR,
+                check=True,
+            )
+            import whisper  # type: ignore
+
+            return whisper.load_model(model_name, device="cpu")
+        except Exception as install_exc:
+            print(
+                "[wer] Whisper unavailable; skipping WER. "
+                f"Install error: {install_exc} (initial: {exc})"
+            )
+            return None
 
 
 def _compute_wer(
@@ -460,7 +482,34 @@ def _compute_wer(
     model_name: str,
 ) -> None:
     whisper_model = _ensure_whisper(model_name)
+    if whisper_model is None:
+        return
     jobs_by_id = {job.job_id: job for job in jobs}
+
+    lang_map = {
+        "eng": "en",
+        "en": "en",
+        "zho": "zh",
+        "zh": "zh",
+        "jpn": "ja",
+        "ja": "ja",
+        "kor": "ko",
+        "ko": "ko",
+        "yue": "yue",
+        "deu": "de",
+        "fra": "fr",
+        "ita": "it",
+        "spa": "es",
+        "por": "pt",
+        "nld": "nl",
+        "pol": "pl",
+        "rus": "ru",
+        "ara": "ar",
+        "ces": "cs",
+        "hun": "hu",
+        "hin": "hi",
+        "tur": "tr",
+    }
 
     for job_id, job_status in status.get("jobs", {}).items():
         if job_status.get("status") != "completed":
@@ -474,9 +523,11 @@ def _compute_wer(
         if not output_path.exists():
             continue
 
+        language = lang_map.get((job.language or "").lower())
         result = whisper_model.transcribe(
             str(output_path),
-            language=job.language or None,
+            language=language,
+            fp16=False,
         )
         transcript = (result or {}).get("text", "").strip()
         wer = _word_error_rate(job.text or "", transcript)
