@@ -121,6 +121,9 @@ setup model device="cpu" torch_version="" python="":
 
     # Create venv with specified Python version (--clear to replace existing)
     echo "Creating venv with Python ${PYTHON_VERSION}..."
+    if [ -d .venv ]; then
+        rm -rf .venv
+    fi
     uv venv --python ${PYTHON_VERSION} --clear
 
     # Activate the venv for subsequent commands

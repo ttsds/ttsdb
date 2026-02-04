@@ -890,6 +890,7 @@ class GPTSoVITS(VoiceCloningTTSBase):
             if self.vocoder is not None:
                 wav_gen = self.vocoder(cfm_res)
                 audio_np = wav_gen[0, 0].detach().cpu().numpy()
+                audio_np = audio_np.astype(np.float32)
             else:
                 # Fallback: return silence if vocoder not loaded
                 raise RuntimeError(

@@ -1,9 +1,7 @@
 dataset_name: example_dataset
-reference_audio:
-  eng:
-    path: assets/reference_audio/daisy/eng.wav
-    text: This is Learning English from the News, our podcast about the news headlines.
-test_sentences:
-  eng:
-    - description: Academia-themed, phonetically broad test sentence
-      text: With tenure, Suzie'd have all the more leisure for yachting, but her publications are no good.
+pairs:
+- speaker: some-speaker
+  language: eng
+  reference_audio: assets/reference_audio/daisy/eng.wav
+  reference_text: This is Learning English from the News, our podcast about the news headlines.
+  target_text: This is a simple test sentence for synthesis.

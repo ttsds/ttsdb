@@ -10,7 +10,7 @@ class TestConfig(BaseModelConfigTests):
     EXPECTED_SAMPLE_RATE = 24000
     EXPECTED_CODE_ROOT = "src"
     EXPECTED_VARIANTS = ["base", "v1"]
-    EXPECTED_DEFAULT_VARIANT = "base"
+    EXPECTED_DEFAULT_VARIANT = "v1"
 
 
 class TestModelImport(BaseModelImportTests):

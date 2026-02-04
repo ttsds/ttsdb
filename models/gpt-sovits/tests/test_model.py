@@ -10,7 +10,7 @@ from ttsdb_core.testing import BaseModelConfigTests, BaseModelImportTests, BaseM
 class TestConfig(BaseModelConfigTests):
     PACKAGE_NAME = "ttsdb_gpt_sovits"
     EXPECTED_MODEL_NAME = "GPT-SoVITS"
-    EXPECTED_SAMPLE_RATE = 32000  # v1/v2 default; v3=24000, v4=48000
+    EXPECTED_SAMPLE_RATE = 48000  # default v4; v1/v2=32000, v3=24000
 
 
 class TestModelImport(BaseModelImportTests):
